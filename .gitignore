@@ -23,3 +23,10 @@ go.work.sum
 
 # env file
 .env
+
+#db files
+devices.db
+
+#the binary itself
+main
+logger-service
