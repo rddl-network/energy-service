@@ -1,4 +1,4 @@
-module rddl/logger-service
+module github.com/rddl-network/logger-service
 
 go 1.20
 

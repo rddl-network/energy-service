@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"os"
 
-	"rddl/logger-service/internal/database"
-	"rddl/logger-service/internal/utils"
+	"github.com/rddl-network/logger-service/internal/database"
+	"github.com/rddl-network/logger-service/internal/utils"
 )
 
 // Response represents API response format

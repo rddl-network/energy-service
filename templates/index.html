@@ -73,6 +73,27 @@
                     </button>
                 </div>
             </form>
+          
+            <div id="alert" class="mt-4 p-3 border rounded hidden"></div>
+        </div>
+        
+        <div id="database-container" class="hidden">
+            <h2 class="text-xl font-semibold mb-4">Database Entries</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse table-auto">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border px-4 py-2">Zigbee ID</th>
+                            <th class="border px-4 py-2">Liquid Address</th>
+                            <th class="border px-4 py-2">Device Name</th>
+                            <th class="border px-4 py-2">Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="devices-table">
+                        <!-- Devices will be added here dynamically -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
