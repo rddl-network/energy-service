@@ -82,16 +82,23 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	// For JSON data
+	var formData struct {
+		ZigbeeID      string `json:"zigbee_id"`
+		LiquidAddress string `json:"liquid_address"`
+		DeviceName    string `json:"device_name"`
+	}
 
-	err := r.ParseForm()
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&formData)
 	if err != nil {
-		sendJSONResponse(w, Response{Error: "Invalid form data"}, http.StatusBadRequest)
+		sendJSONResponse(w, Response{Error: "Invalid JSON data"}, http.StatusBadRequest)
 		return
 	}
 
-	zigbeeID := r.FormValue("zigbee_id")
-	liquidAddress := r.FormValue("liquid_address")
-	deviceName := r.FormValue("device_name")
+	zigbeeID := formData.ZigbeeID
+	liquidAddress := formData.LiquidAddress
+	deviceName := formData.DeviceName
 
 	// Validate form data
 	if zigbeeID == "" || liquidAddress == "" || deviceName == "" {

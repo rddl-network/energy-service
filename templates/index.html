@@ -124,12 +124,30 @@
                 
                 const formData = new FormData(form);
                 
+                // Get form values
+                const zigbeeId = document.getElementById('zigbee_id').value;
+                const liquidAddress = document.getElementById('liquid_address').value;
+                const deviceName = document.getElementById('device_name').value;
+                
+                // Create JSON payload
+                const data = {
+                    zigbee_id: zigbeeId,
+                    liquid_address: liquidAddress,
+                    device_name: deviceName
+                };
+                
+                //const formData = new URLSearchParams(new FormData(form));
+                
                 fetch('/register', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
                 })
                 .then(response => response.json())
                 .then(data => {
+                    // Rest of your code remains the same
                     if (data.error) {
                         showAlert(data.error, 'error');
                     } else {
@@ -144,9 +162,9 @@
                 })
                 .catch(error => {
                     showAlert('An error occurred. Please try again.', 'error');
+                    console.error('Error:', error);
                 });
-            });
-            
+            });            
             function showAlert(message, type) {
                 alertBox.textContent = message;
                 alertBox.classList.remove('hidden', 'bg-red-100', 'border-red-400', 'text-red-700', 'bg-green-100', 'border-green-400', 'text-green-700');
