@@ -30,3 +30,4 @@ devices.db
 #the binary itself
 main
 logger-service
+logger-client

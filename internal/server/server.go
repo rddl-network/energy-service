@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
@@ -52,6 +53,7 @@ func (s *Server) Routes() {
 	http.HandleFunc("/register", s.handleRegister)
 	http.HandleFunc("/api/devices", s.handleGetDevices)
 	http.HandleFunc("/api/devices/", s.handleGetDevice)
+	http.HandleFunc("/api/energy", s.handleEnergyData)
 }
 
 // handleIndex renders the main page
@@ -71,4 +73,29 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error during template execution %v", err.Error())
 	}
+}
+
+// handleEnergyData handles POST requests, decodes JSON data, logs it, and responds with a success message
+func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var energyData struct {
+		Version  int         `json:"version"`
+		ZigbeeID string      `json:"zigbee_id"`
+		Date     string      `json:"date"`
+		Data     [96]float64 `json:"data"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&energyData); err != nil {
+		http.Error(w, "Failed to decode JSON", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("Received energy data: %+v", energyData)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Energy data received successfully"))
 }

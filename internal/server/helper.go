@@ -117,7 +117,7 @@ func CreateTemplates() error {
                             <th class="border px-4 py-2">Zigbee ID</th>
                             <th class="border px-4 py-2">Liquid Address</th>
                             <th class="border px-4 py-2">Device Name</th>
-                            <th class="border px-4 py-2">Timestamp</th>
+                            <th class="border px-4 py-2">Date</th>
                         </tr>
                     </thead>
                     <tbody id="devices-table">
@@ -214,7 +214,7 @@ func CreateTemplates() error {
                         row.innerHTML = '<td class="border px-4 py-2 font-mono">' + zigbee_id + '</td>' +
                             '<td class="border px-4 py-2">' + data.liquid_address + '</td>' +
                             '<td class="border px-4 py-2">' + data.device_name + '</td>' +
-                            '<td class="border px-4 py-2 text-sm">' + new Date(data.timestamp).toLocaleString() + '</td>';
+                            '<td class="border px-4 py-2 text-sm">' + new Date(data.date).toLocaleString() + '</td>';
                         
                         devicesTable.appendChild(row);
                     }
