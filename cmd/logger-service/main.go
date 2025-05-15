@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/rddl-network/logger-service/internal/config"
 	"github.com/rddl-network/logger-service/internal/server"
 )
 
@@ -13,6 +14,16 @@ func main() {
 	// if err != nil {
 	// log.Fatalf("Failed to create templates: %v", err)
 	// }
+
+	// Load configuration
+	cfg, err := config.LoadConfig("app.toml")
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	// Access configuration
+	log.Printf("Server running on port: %d", cfg.Server.Port)
+	log.Printf("InfluxDB URL: %s", cfg.InfluxDB.URL)
 
 	// Create and configure server
 	srv, err := server.NewServer()
