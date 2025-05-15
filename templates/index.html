@@ -86,7 +86,7 @@
                             <th class="border px-4 py-2">Zigbee ID</th>
                             <th class="border px-4 py-2">Liquid Address</th>
                             <th class="border px-4 py-2">Device Name</th>
-                            <th class="border px-4 py-2">Date</th>
+                            <th class="border px-4 py-2">Timestamp</th>
                         </tr>
                     </thead>
                     <tbody id="devices-table">
@@ -201,7 +201,7 @@
                         row.innerHTML = '<td class="border px-4 py-2 font-mono">' + zigbee_id + '</td>' +
                             '<td class="border px-4 py-2">' + data.liquid_address + '</td>' +
                             '<td class="border px-4 py-2">' + data.device_name + '</td>' +
-                            '<td class="border px-4 py-2 text-sm">' + new Date(data.date).toLocaleString() + '</td>';
+                            '<td class="border px-4 py-2 text-sm">' + new Date(data.timestamp).toLocaleString() + '</td>';
                         
                         devicesTable.appendChild(row);
                     }

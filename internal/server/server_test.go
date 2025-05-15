@@ -18,15 +18,15 @@ func TestHandleEnergyData(t *testing.T) {
 
 	// Create a sample energy data payload
 	payload := struct {
-		Version  int     `json:"version"`
-		ZigbeeID string  `json:"zigbee_id"`
-		Date     string  `json:"date"`
-		Data     [96]int `json:"data"`
+		Version  int         `json:"version"`
+		ZigbeeID string      `json:"zigbee_id"`
+		Date     string      `json:"date"`
+		Data     [96]float64 `json:"data"`
 	}{
 		Version:  1,
 		ZigbeeID: "12345",
 		Date:     "2025-05-14T12:00:00Z",
-		Data:     [96]int{1, 2, 3, 4, 5},
+		Data:     [96]float64{1, 2, 3, 4, 5},
 	}
 
 	// Marshal the payload to JSON
