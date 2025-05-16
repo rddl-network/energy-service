@@ -21,7 +21,7 @@ func main() {
 	utcTime := time.Now().UTC()
 	// Format as YYYY-MM-DD (same format you're using in your JSON)
 	currentDate := utcTime.Format("2006-01-02")
-	defaultData := "[]"
+	defaultData := ""
 	// Define CLI flags
 	protocol := flag.String("protocol", "http", "Protocol to use (http or https)")
 	host := flag.String("host", "localhost", "Hostname or IP address of the server")
