@@ -29,8 +29,8 @@ func (u *Utils) MapEnergyDataToTime(data [96]float64) [][2]interface{} {
 	return result
 }
 
+// Index2Time converts an index to hour and minute values
 func (u *Utils) Index2Time(index int) (int, int) {
-
 	hour := ((index + 1) * 15) / 60
 	minute := ((index + 1) * 15) % 60
 	if hour == 24 {
@@ -40,11 +40,11 @@ func (u *Utils) Index2Time(index int) (int, int) {
 }
 
 // CreateTimestamp generates a timestamp from a given date, hour, and minutes
-func (u *Utils) CreateTimestamp(date string, hour, minute int) (string, error) {
+func (u *Utils) CreateTimestamp(date string, hour, minute int) (time.Time, error) {
 	// Parse the date string into a time.Time object
 	parsedDate, err := time.Parse("2006-01-02", date)
 	if err != nil {
-		return "", fmt.Errorf("invalid date format: %v", err)
+		return time.Now(), fmt.Errorf("invalid date format: %v", err)
 	}
 
 	// Combine the date with the provided hour and minute
@@ -59,5 +59,5 @@ func (u *Utils) CreateTimestamp(date string, hour, minute int) (string, error) {
 		time.UTC,
 	)
 
-	return timestamp.Format(time.RFC3339), nil
+	return timestamp, nil
 }

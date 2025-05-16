@@ -53,11 +53,6 @@ func main() {
 		}
 		dataSlice = append(dataSlice, floatVal)
 	}
-	// var dataSlice []float64
-	// err := json.Unmarshal([]byte(dataStr), &dataSlice)
-	// if err != nil {
-	// 	log.Fatalf("Failed to parse data array: %v", err)
-	// }
 
 	generateRandomData := false
 	if !*production {
@@ -77,7 +72,12 @@ func main() {
 	var dataArray [96]float64
 	for i := 0; i < 96; i++ {
 		if generateRandomData {
-			dataArray[i] = rand.Float64()
+			dataArray[i] = float64(i) + rand.Float64()
+			if i == 0 {
+				dataArray[i] = rand.Float64()
+			} else {
+				dataArray[i] = dataArray[i-1] + rand.Float64()
+			}
 		} else {
 			dataArray[i] = dataSlice[i]
 		}

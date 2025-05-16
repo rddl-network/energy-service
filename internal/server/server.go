@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go"
+	"github.com/rddl-network/logger-service/internal/config"
 	"github.com/rddl-network/logger-service/internal/database"
 	"github.com/rddl-network/logger-service/internal/utils"
 )
@@ -105,36 +106,38 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Received energy data: %+v", energyData)
+	cfg := config.GetConfig()
 
 	// Write data to InfluxDB
-	client := influxdb2.NewClient(InfluxDBURL, InfluxDBToken)
+	client := influxdb2.NewClient(cfg.InfluxDB.URL, cfg.InfluxDB.Token)
 	defer client.Close()
 
-	writeAPI := client.WriteAPIBlocking(InfluxDBOrg, InfluxDBBucket)
+	writeAPI := client.WriteAPIBlocking(cfg.InfluxDB.Org, cfg.InfluxDB.Bucket)
 
 	// Prepare data point
 
 	for i := 0; i < 96; i++ {
-		hour, minutes := utils.Index2Time(i)
-		ts := utils.CreateTimestamp(energyData.Date, hour, minutes)
-		log.Printf("Timestamp: %s", ts)
-	}
+		hour, minutes := s.utils.Index2Time(i)
+		ts, err := s.utils.CreateTimestamp(energyData.Date, hour, minutes)
+		if err != nil {
+			log.Printf("Error creating timestamp: %v", err)
+			continue
+		}
+		//log.Printf("Timestamp: %s", ts)
+		p := influxdb2.NewPoint(
+			"energy_data",
+			map[string]string{"zigbee_id": energyData.ZigbeeID},
+			map[string]interface{}{
+				"overall_kwh": energyData.Data[i],
+			},
+			ts, // Use the current timestamp
+		)
 
-	// p := influxdb2.NewPoint(
-	// "energy_data",
-	// map[string]string{"zigbee_id": energyData.ZigbeeID},
-	// map[string]interface{}{
-	// "version": energyData.Version,
-	// "date":    energyData.Date,
-	// "data":    energyData.Data,
-	// },
-	// time.Now(), // Use the current timestamp
-	// )
-
-	if err := writeAPI.WritePoint(context.Background(), p); err != nil {
-		log.Printf("Failed to write to InfluxDB: %v", err)
-		http.Error(w, "Failed to write to InfluxDB", http.StatusInternalServerError)
-		return
+		if err := writeAPI.WritePoint(context.Background(), p); err != nil {
+			log.Printf("Failed to write to InfluxDB: %v", err)
+			http.Error(w, "Failed to write to InfluxDB", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)

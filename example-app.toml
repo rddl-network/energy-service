@@ -1,0 +1,9 @@
+[server]
+port = 8080 # Port for the HTTP server
+log_level = "info" # Log level: debug, info, warn, error
+
+[influxdb]
+url = "localhost:8081" # InfluxDB URL
+token = ""
+org = "" # InfluxDB organization
+bucket = "" # InfluxDB bucket
