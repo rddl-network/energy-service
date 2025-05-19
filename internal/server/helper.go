@@ -7,10 +7,12 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/rddl-network/logger-service/internal/config"
 	"github.com/rddl-network/logger-service/internal/model"
 )
 
 func (s *Server) writeJSON2File(data model.EnergyData) {
+	cfg := config.GetConfig()
 	// Store data in a JSON file (append as JSON Lines)
 	s.energyDataFileMutex.Lock()
 	f, err := os.OpenFile(cfg.Server.DataFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -21,7 +23,9 @@ func (s *Server) writeJSON2File(data model.EnergyData) {
 		if err := enc.Encode(data); err != nil {
 			log.Printf("Failed to write energy data to JSON file: %v", err)
 		}
-		f.Close()
+		if err := f.Close(); err != nil {
+			log.Printf("Failed to close JSON file: %v", err)
+		}
 	}
 	s.energyDataFileMutex.Unlock()
 }

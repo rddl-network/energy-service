@@ -115,5 +115,8 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Energy data received and written to InfluxDB successfully"))
+	_, err = w.Write([]byte("Energy data received and written to InfluxDB successfully"))
+	if err != nil {
+		log.Printf("Error writing response: %v", err)
+	}
 }
