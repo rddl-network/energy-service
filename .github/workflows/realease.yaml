@@ -27,7 +27,6 @@ on:
         description: "Directory"
         required: false
         type: string
-        default: "./"
 
 
 jobs:
