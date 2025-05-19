@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/rddl-network/logger-service/internal/config"
-	"github.com/rddl-network/logger-service/internal/server"
+	"github.com/rddl-network/energy-service/internal/config"
+	"github.com/rddl-network/energy-service/internal/server"
 
 	"context"
 	"time"

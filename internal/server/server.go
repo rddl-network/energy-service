@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/rddl-network/logger-service/internal/database"
-	"github.com/rddl-network/logger-service/internal/model"
-	"github.com/rddl-network/logger-service/internal/utils"
+	"github.com/rddl-network/energy-service/internal/database"
+	"github.com/rddl-network/energy-service/internal/model"
+	"github.com/rddl-network/energy-service/internal/utils"
 )
 
 // Response represents API response format
