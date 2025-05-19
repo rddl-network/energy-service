@@ -1,4 +1,4 @@
-# Energy Service and Service
+# Energy Service and Client
 
 ## Energy Client
 
