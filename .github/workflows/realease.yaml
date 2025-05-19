@@ -1,0 +1,43 @@
+---
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag"
+        required: true
+        default: ""
+      prerelease:
+        type: choice
+        description: "Pre-Release?"
+        required: true
+        options:
+          - true
+          - false
+        default: true
+      files:
+        description: "Files"
+        required: true
+        default: "logger-service"
+        options:
+          - "logger-service"
+          - "logger-client"
+      directory:
+        description: "Directory"
+        required: false
+        type: string
+        default: "./cmd/logger-service"
+        options:
+          - "./cmd/logger-client"
+          - "./cmd/logger-service"
+
+
+jobs:
+  release:
+    uses: rddl-network/github-actions/.github/workflows/release.yaml@main
+    with:
+      tag: ${{ github.event.inputs.tag }}
+      prerelease: ${{ fromJSON(github.event.inputs.prerelease) }}
+      files: ${{ github.event.inputs.files }}
+      directory: ${{ github.event.inputs.directory }}
