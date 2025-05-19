@@ -19,10 +19,10 @@ on:
       files:
         description: "Files"
         required: true
-        default: "logger-service, logger-client"
+        default: "energy-service, energy-client"
         options:
-          - "logger-service"
-          - "logger-client"
+          - "energy-service"
+          - "energy-client"
       directory:
         description: "Directory"
         required: false

@@ -5,10 +5,10 @@
 ## Logger Client
 
 ### Overview
-The `logger-client` is a command-line tool designed to send JSON payloads containing energy data to a server. It supports configurable options such as protocol, host, port, Zigbee ID, and date. The client validates input data and sends HTTP POST requests to the server.
+The `energy-client` is a command-line tool designed to send JSON payloads containing energy data to a server. It supports configurable options such as protocol, host, port, Zigbee ID, and date. The client validates input data and sends HTTP POST requests to the server.
 
 ### Parameters
-The `logger-client` accepts the following parameters:
+The `energy-client` accepts the following parameters:
 
 - `--protocol` (default: `http`): Protocol to use (http or https).
 - `--host` (default: `localhost`): Hostname or IP address of the server.
@@ -20,13 +20,13 @@ The `logger-client` accepts the following parameters:
 
 ### Example Usage
 ```bash
-./logger-client --protocol http --host localhost --port 8080 --zigbee_id 12345 --date 2025-05-15 --data "1.0 2.0 3.0 ..."
+./energy-client --protocol http --host localhost --port 8080 --zigbee_id 12345 --date 2025-05-15 --data "1.0 2.0 3.0 ..."
 ```
 
 ### Development
 To build the client, run:
 ```bash
-go build -o logger-client ./cmd/logger-client
+go build -o energy-client ./cmd/energy-client
 ```
 
 ---
@@ -34,7 +34,7 @@ go build -o logger-client ./cmd/logger-client
 ## Logger Service
 
 ### Overview
-The `logger-service` is a server application that handles device registration and data storage. It provides RESTful APIs for registering devices, retrieving device information, and managing data. The service includes a web interface for interacting with the database and supports template rendering.
+The `energy-service` is a server application that handles device registration and data storage. It provides RESTful APIs for registering devices, retrieving device information, and managing data. The service includes a web interface for interacting with the database and supports template rendering.
 
 ### Features
 - RESTful API for device registration and data retrieval.
@@ -48,14 +48,14 @@ The `logger-service` is a server application that handles device registration an
 - `GET /api/devices/{id}`: Retrieve a specific device by ID.
 
 ### Usage
-Run the `logger-service` with the following command:
+Run the `energy-service` with the following command:
 ```bash
-./logger-service
+./energy-service
 ```
 The server will start on `http://localhost:8080` by default.
 
 ### Development
 To build the service, run:
 ```bash
-go build -o logger-service ./cmd/logger-service
+go build -o energy-service ./cmd/energy-service
 ```

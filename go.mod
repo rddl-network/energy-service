@@ -1,4 +1,4 @@
-module github.com/rddl-network/logger-service
+module github.com/rddl-network/energy-service
 
 go 1.20
 
