@@ -31,3 +31,7 @@ devices.db
 main
 logger-service
 logger-client
+
+#local data
+energy_data.json
+app.toml

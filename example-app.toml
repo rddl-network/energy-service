@@ -1,6 +1,7 @@
 [server]
 port = 8080 # Port for the HTTP server
 log_level = "info" # Log level: debug, info, warn, error
+data_file = "energy_data.json"
 
 [influxdb]
 url = "localhost:8081" # InfluxDB URL

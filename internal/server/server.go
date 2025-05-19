@@ -1,24 +1,15 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
+	"sync"
 
-	influxdb2 "github.com/influxdata/influxdb-client-go"
-	"github.com/rddl-network/logger-service/internal/config"
 	"github.com/rddl-network/logger-service/internal/database"
+	"github.com/rddl-network/logger-service/internal/model"
 	"github.com/rddl-network/logger-service/internal/utils"
-)
-
-// Global configuration variables for InfluxDB
-var (
-	InfluxDBURL    string
-	InfluxDBToken  string
-	InfluxDBOrg    string
-	InfluxDBBucket string
 )
 
 // Response represents API response format
@@ -29,8 +20,9 @@ type Response struct {
 
 // Server represents the web server
 type Server struct {
-	db    *database.Database
-	utils *utils.Utils
+	db                  *database.Database
+	utils               *utils.Utils
+	energyDataFileMutex sync.Mutex
 }
 
 // NewServer creates a new server instance
@@ -93,12 +85,7 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var energyData struct {
-		Version  int         `json:"version"`
-		ZigbeeID string      `json:"zigbee_id"`
-		Date     string      `json:"date"`
-		Data     [96]float64 `json:"data"`
-	}
+	var energyData model.EnergyData
 
 	if err := json.NewDecoder(r.Body).Decode(&energyData); err != nil {
 		http.Error(w, "Failed to decode JSON", http.StatusBadRequest)
@@ -106,38 +93,11 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Received energy data: %+v", energyData)
-	cfg := config.GetConfig()
 
-	// Write data to InfluxDB
-	client := influxdb2.NewClient(cfg.InfluxDB.URL, cfg.InfluxDB.Token)
-	defer client.Close()
-
-	writeAPI := client.WriteAPIBlocking(cfg.InfluxDB.Org, cfg.InfluxDB.Bucket)
-
-	// Prepare data point
-
-	for i := 0; i < 96; i++ {
-		hour, minutes := s.utils.Index2Time(i)
-		ts, err := s.utils.CreateTimestamp(energyData.Date, hour, minutes)
-		if err != nil {
-			log.Printf("Error creating timestamp: %v", err)
-			continue
-		}
-		//log.Printf("Timestamp: %s", ts)
-		p := influxdb2.NewPoint(
-			"energy_data",
-			map[string]string{"zigbee_id": energyData.ZigbeeID},
-			map[string]interface{}{
-				"overall_kwh": energyData.Data[i],
-			},
-			ts, // Use the current timestamp
-		)
-
-		if err := writeAPI.WritePoint(context.Background(), p); err != nil {
-			log.Printf("Failed to write to InfluxDB: %v", err)
-			http.Error(w, "Failed to write to InfluxDB", http.StatusInternalServerError)
-			return
-		}
+	go s.writeJSON2File(energyData)
+	err := s.write2InfluxDB(energyData)
+	if err != nil {
+		http.Error(w, "Failed to write to InfluxDB", http.StatusInternalServerError)
 	}
 
 	w.WriteHeader(http.StatusOK)

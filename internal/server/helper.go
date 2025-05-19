@@ -1,11 +1,69 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+
+	influxdb2 "github.com/influxdata/influxdb-client-go"
+	"github.com/rddl-network/logger-service/internal/config"
+	"github.com/rddl-network/logger-service/internal/model"
 )
+
+func (s *Server) writeJSON2File(data model.EnergyData) {
+	cfg := config.GetConfig()
+
+	// Store data in a JSON file (append as JSON Lines)
+	s.energyDataFileMutex.Lock()
+	f, err := os.OpenFile(cfg.Server.DataFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("Failed to open JSON file: %v", err)
+	} else {
+		enc := json.NewEncoder(f)
+		if err := enc.Encode(data); err != nil {
+			log.Printf("Failed to write energy data to JSON file: %v", err)
+		}
+		f.Close()
+	}
+	s.energyDataFileMutex.Unlock()
+}
+
+func (s *Server) write2InfluxDB(data model.EnergyData) error {
+	cfg := config.GetConfig()
+
+	// Write data to InfluxDB
+	client := influxdb2.NewClient(cfg.InfluxDB.URL, cfg.InfluxDB.Token)
+	defer client.Close()
+
+	writeAPI := client.WriteAPIBlocking(cfg.InfluxDB.Org, cfg.InfluxDB.Bucket)
+
+	// Prepare data point
+
+	for i := 0; i < 96; i++ {
+		hour, minutes := s.utils.Index2Time(i)
+		ts, err := s.utils.CreateTimestamp(data.Date, hour, minutes)
+		if err != nil {
+			log.Printf("Error creating timestamp: %v", err)
+			continue
+		}
+		p := influxdb2.NewPoint(
+			"energy_data",
+			map[string]string{"zigbee_id": data.ZigbeeID},
+			map[string]interface{}{
+				"overall_kwh": data.Data[i],
+			},
+			ts, // Use the current timestamp
+		)
+
+		if err := writeAPI.WritePoint(context.Background(), p); err != nil {
+			log.Printf("Failed to write to InfluxDB: %v", err)
+			return err
+		}
+	}
+	return nil
+}
 
 // sendJSONResponse sends a JSON response with the given status code
 func sendJSONResponse(w http.ResponseWriter, resp Response, statusCode int) {
@@ -117,7 +175,7 @@ func CreateTemplates() error {
                             <th class="border px-4 py-2">Zigbee ID</th>
                             <th class="border px-4 py-2">Liquid Address</th>
                             <th class="border px-4 py-2">Device Name</th>
-                            <th class="border px-4 py-2">Date</th>
+                            <th class="border px-4 py-2">Timestamp</th>
                         </tr>
                     </thead>
                     <tbody id="devices-table">
@@ -214,7 +272,7 @@ func CreateTemplates() error {
                         row.innerHTML = '<td class="border px-4 py-2 font-mono">' + zigbee_id + '</td>' +
                             '<td class="border px-4 py-2">' + data.liquid_address + '</td>' +
                             '<td class="border px-4 py-2">' + data.device_name + '</td>' +
-                            '<td class="border px-4 py-2 text-sm">' + new Date(data.date).toLocaleString() + '</td>';
+                            '<td class="border px-4 py-2 text-sm">' + new Date(data.timestamp).toLocaleString() + '</td>';
                         
                         devicesTable.appendChild(row);
                     }

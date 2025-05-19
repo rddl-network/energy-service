@@ -17,6 +17,7 @@ type Config struct {
 type ServerConfig struct {
 	Port     int    `toml:"port"`      // Port for the HTTP server
 	LogLevel string `toml:"log_level"` // Log level: debug, info, warn, error
+	DataFile string `toml:"data_file"` // Path to the data file
 }
 
 // InfluxDBConfig holds InfluxDB-related configuration
@@ -27,6 +28,22 @@ type InfluxDBConfig struct {
 	Bucket string `toml:"bucket"` // InfluxDB bucket
 }
 
+func defaultConfig() *Config {
+	return &Config{
+		Server: ServerConfig{
+			Port:     8080,
+			LogLevel: "info",
+			DataFile: "energy_data.json",
+		},
+		InfluxDB: InfluxDBConfig{
+			URL:    "https://eu-central-1-1.aws.cloud2.influxdata.com",
+			Token:  "TBUV2ciRQYeM2KUOGJmt1V0c7jv0CqxYhcSaGpELe3YLnc3Tc2dcQEAbrZplmDcb-HSBLbPr9kAXPHpvPf8ezw==",
+			Org:    "713a74226aae814d",
+			Bucket: "0ffa8c3c2d0957a8",
+		},
+	}
+}
+
 var config *Config
 
 // LoadConfig loads the configuration from a TOML file
@@ -35,17 +52,14 @@ func LoadConfig(filePath string) (*Config, error) {
 		return config, nil
 	}
 
+	cfg := defaultConfig()
+
 	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		_ = toml.Unmarshal(data, cfg) // Unmarshal over defaults
 	}
 
-	var cfg Config
-	if err := toml.Unmarshal(data, &cfg); err != nil {
-		return nil, err
-	}
-
-	config = &cfg
+	config = cfg
 	return config, nil
 }
 

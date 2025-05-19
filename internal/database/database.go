@@ -13,7 +13,7 @@ import (
 type Device struct {
 	LiquidAddress string    `json:"liquid_address"`
 	DeviceName    string    `json:"device_name"`
-	Date          time.Time `json:"date"`
+	Timestamp     time.Time `json:"timestamp"`
 }
 
 // Database is a LevelDB key-value store using Zigbee ID as the key
@@ -50,7 +50,7 @@ func (db *Database) AddDevice(zigbeeID, liquidAddress, deviceName string) error 
 	device := Device{
 		LiquidAddress: liquidAddress,
 		DeviceName:    deviceName,
-		Date:          time.Now(),
+		Timestamp:     time.Now(),
 	}
 
 	// Serialize the device to JSON

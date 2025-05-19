@@ -1,4 +1,4 @@
-package server
+package server_test
 
 import (
 	"bytes"
@@ -6,26 +6,33 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/rddl-network/logger-service/internal/config"
+	"github.com/rddl-network/logger-service/internal/model"
+	"github.com/rddl-network/logger-service/internal/server"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHandleEnergyData(t *testing.T) {
-	// Create a new server instance using NewServer
-	srv, err := NewServer()
+	// Ensure we load app.toml from the module root
+	_, err := config.LoadConfig("app.toml")
+	assert.NoError(t, err, "Failed to load configuration")
+	_ = config.GetConfig()
+
+	srv, err := server.NewServer()
 	if err != nil {
 		t.Fatalf("Failed to create server: %v", err)
 	}
 	defer srv.Close()
 
+	// Register routes
+	srv.Routes()
+
 	// Create a sample energy data payload
-	payload := struct {
-		Version  int         `json:"version"`
-		ZigbeeID string      `json:"zigbee_id"`
-		Date     string      `json:"date"`
-		Data     [96]float64 `json:"data"`
-	}{
+	payload := model.EnergyData{
 		Version:  1,
 		ZigbeeID: "12345",
-		Date:     "2025-05-14T12:00:00Z",
+		Date:     "2025-05-14",
 		Data:     [96]float64{1, 2, 3, 4, 5},
 	}
 
@@ -45,9 +52,8 @@ func TestHandleEnergyData(t *testing.T) {
 	// Create a response recorder to capture the response
 	rr := httptest.NewRecorder()
 
-	// Call the handleEnergyData method
-	handler := http.HandlerFunc(srv.handleEnergyData)
-	handler.ServeHTTP(rr, req)
+	// Serve the request using the default mux
+	http.DefaultServeMux.ServeHTTP(rr, req)
 
 	// Check the status code
 	if status := rr.Code; status != http.StatusOK {
