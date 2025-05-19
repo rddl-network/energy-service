@@ -56,7 +56,11 @@ func LoadConfig(filePath string) (*Config, error) {
 
 	data, err := os.ReadFile(filePath)
 	if err == nil {
-		_ = toml.Unmarshal(data, cfg) // Unmarshal over defaults
+		err = toml.Unmarshal(data, cfg) // Unmarshal over defaults
+		if err != nil {
+			log.Printf("Error loading config file %s: %v", filePath, err)
+			return nil, err
+		}
 	}
 
 	config = cfg
