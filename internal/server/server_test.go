@@ -7,10 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/rddl-network/logger-service/internal/config"
-	"github.com/rddl-network/logger-service/internal/influxdb"
-	"github.com/rddl-network/logger-service/internal/model"
-	"github.com/rddl-network/logger-service/internal/server"
+	"github.com/rddl-network/energy-service/internal/config"
+	"github.com/rddl-network/energy-service/internal/influxdb"
+	"github.com/rddl-network/energy-service/internal/model"
+	"github.com/rddl-network/energy-service/internal/server"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

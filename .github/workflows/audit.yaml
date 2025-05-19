@@ -7,7 +7,7 @@ jobs:
   audit:
     strategy:
       matrix:
-        directory: [ './cmd/logger-client', './cmd/logger-service' ]
+        directory: [ './cmd/energy-client', './cmd/energy-service' ]
     uses: rddl-network/github-actions/.github/workflows/audit.yaml@main
     with:
       working_directory: ${{ matrix.directory }}

@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/rddl-network/logger-service/internal/database"
+	"github.com/rddl-network/energy-service/internal/database"
 )
 
 // handleRegister handles device registration requests

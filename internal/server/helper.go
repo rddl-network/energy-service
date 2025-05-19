@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/rddl-network/logger-service/internal/config"
-	"github.com/rddl-network/logger-service/internal/model"
+	"github.com/rddl-network/energy-service/internal/config"
+	"github.com/rddl-network/energy-service/internal/model"
 )
 
 func (s *Server) writeJSON2File(data model.EnergyData) {
