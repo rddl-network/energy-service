@@ -1,8 +1,6 @@
-# logger-registration
+# Energy Service and Service
 
-# Logger Client and Logger Service
-
-## Logger Client
+## Energy Client
 
 ### Overview
 The `energy-client` is a command-line tool designed to send JSON payloads containing energy data to a server. It supports configurable options such as protocol, host, port, Zigbee ID, and date. The client validates input data and sends HTTP POST requests to the server.
@@ -31,7 +29,7 @@ go build -o energy-client ./cmd/energy-client
 
 ---
 
-## Logger Service
+## Energy Service
 
 ### Overview
 The `energy-service` is a server application that handles device registration and data storage. It provides RESTful APIs for registering devices, retrieving device information, and managing data. The service includes a web interface for interacting with the database and supports template rendering.
