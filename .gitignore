@@ -29,7 +29,8 @@ devices.db
 
 #the binary itself
 main
-
+static/rddl-sidepane.png
+templates/index.html
 
 #local data
 energy_data.json
