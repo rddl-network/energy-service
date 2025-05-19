@@ -27,10 +27,7 @@ on:
         description: "Directory"
         required: false
         type: string
-        default: "./cmd/logger-service"
-        options:
-          - "./cmd/logger-client"
-          - "./cmd/logger-service"
+        default: "./"
 
 
 jobs:
