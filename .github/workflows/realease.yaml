@@ -19,7 +19,7 @@ on:
       files:
         description: "Files"
         required: true
-        default: "logger-service"
+        default: "logger-service, logger-client"
         options:
           - "logger-service"
           - "logger-client"
