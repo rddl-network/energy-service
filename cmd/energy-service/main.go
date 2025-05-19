@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/rddl-network/energy-service/internal/config"
 	"github.com/rddl-network/energy-service/internal/server"
@@ -13,6 +14,9 @@ import (
 	influxdb2 "github.com/influxdata/influxdb-client-go"
 	"github.com/influxdata/influxdb-client-go/api"
 	"github.com/influxdata/influxdb-client-go/api/write"
+
+	_ "embed"
+	"os"
 )
 
 // Adapter to match the server's expected WritePoint interface
@@ -25,12 +29,21 @@ func (a *InfluxWriteAPIAdapter) WritePoint(ctx context.Context, measurement stri
 	return a.api.WritePoint(ctx, p)
 }
 
+//go:embed static/rddl-sidepane.png
+var rddlSidepanePNG []byte
+
 func main() {
 	// Create templates
-	//err := server.CreateTemplates()
-	// if err != nil {
-	// log.Fatalf("Failed to create templates: %v", err)
-	// }
+	err := server.CreateTemplates()
+	if err != nil {
+		log.Fatalf("Failed to create templates: %v", err)
+	}
+
+	// Write embedded PNG to disk
+	err = os.WriteFile("static/rddl-sidepane.png", rddlSidepanePNG, 0644)
+	if err != nil {
+		log.Fatalf("Failed to write rddl-sidepane.png: %v", err)
+	}
 
 	// Load configuration
 	cfg, err := config.LoadConfig("app.toml")
@@ -56,6 +69,6 @@ func main() {
 	srv.Routes()
 
 	// Start the server
-	log.Println("Server starting on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Println("Server starting on http://localhost:" + strconv.Itoa(cfg.Server.Port))
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(cfg.Server.Port), nil))
 }

@@ -45,13 +45,6 @@ func NewServer(writeAPI interface {
 	}, nil
 }
 
-// SetInfluxWriteAPI allows injecting a custom InfluxDB write API (for testing/mocking)
-func (s *Server) SetInfluxWriteAPI(writeAPI interface {
-	WritePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts interface{}) error
-}) {
-	s.influxWriteAPI = writeAPI
-}
-
 // Close shuts down the server and closes the database
 func (s *Server) Close() {
 	s.db.Close()
