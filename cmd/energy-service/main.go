@@ -32,18 +32,35 @@ func (a *InfluxWriteAPIAdapter) WritePoint(ctx context.Context, measurement stri
 //go:embed static/rddl-sidepane.png
 var rddlSidepanePNG []byte
 
-func main() {
-	// Create templates
-	err := server.CreateTemplates()
-	if err != nil {
-		log.Fatalf("Failed to create templates: %v", err)
+//go:embed templates/index.html
+var indexHTML []byte
+
+func writeContentToFiles() {
+	// Create templates directory
+	if err := os.MkdirAll("templates", 0755); err != nil {
+		log.Fatalf("Failed to create folder templates: %v", err)
+	}
+
+	// Create static directory
+	if err := os.MkdirAll("static", 0755); err != nil {
+		log.Fatalf("Failed to create folder static: %v", err)
 	}
 
 	// Write embedded PNG to disk
-	err = os.WriteFile("static/rddl-sidepane.png", rddlSidepanePNG, 0644)
+	err := os.WriteFile("static/rddl-sidepane.png", rddlSidepanePNG, 0644)
 	if err != nil {
 		log.Fatalf("Failed to write rddl-sidepane.png: %v", err)
 	}
+
+	err = os.WriteFile("templates/index.html", indexHTML, 0644)
+	if err != nil {
+		log.Fatalf("Failed to write index.html: %v", err)
+	}
+}
+
+func main() {
+	// Create templates
+	writeContentToFiles()
 
 	// Load configuration
 	cfg, err := config.LoadConfig("app.toml")
