@@ -7,14 +7,10 @@ import (
 	"net/http"
 	"os"
 
-	influxdb2 "github.com/influxdata/influxdb-client-go"
-	"github.com/rddl-network/logger-service/internal/config"
 	"github.com/rddl-network/logger-service/internal/model"
 )
 
 func (s *Server) writeJSON2File(data model.EnergyData) {
-	cfg := config.GetConfig()
-
 	// Store data in a JSON file (append as JSON Lines)
 	s.energyDataFileMutex.Lock()
 	f, err := os.OpenFile(cfg.Server.DataFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -31,15 +27,11 @@ func (s *Server) writeJSON2File(data model.EnergyData) {
 }
 
 func (s *Server) write2InfluxDB(data model.EnergyData) error {
-	cfg := config.GetConfig()
-
-	// Write data to InfluxDB
-	client := influxdb2.NewClient(cfg.InfluxDB.URL, cfg.InfluxDB.Token)
-	defer client.Close()
-
-	writeAPI := client.WriteAPIBlocking(cfg.InfluxDB.Org, cfg.InfluxDB.Bucket)
-
-	// Prepare data point
+	writeAPI := s.influxWriteAPI
+	if writeAPI == nil {
+		log.Printf("No InfluxDB write API set")
+		return nil
+	}
 
 	for i := 0; i < 96; i++ {
 		hour, minutes := s.utils.Index2Time(i)
@@ -48,16 +40,14 @@ func (s *Server) write2InfluxDB(data model.EnergyData) error {
 			log.Printf("Error creating timestamp: %v", err)
 			continue
 		}
-		p := influxdb2.NewPoint(
+		err = writeAPI.WritePoint(
+			context.Background(),
 			"energy_data",
 			map[string]string{"zigbee_id": data.ZigbeeID},
-			map[string]interface{}{
-				"overall_kwh": data.Data[i],
-			},
-			ts, // Use the current timestamp
+			map[string]interface{}{"overall_kwh": data.Data[i]},
+			ts,
 		)
-
-		if err := writeAPI.WritePoint(context.Background(), p); err != nil {
+		if err != nil {
 			log.Printf("Failed to write to InfluxDB: %v", err)
 			return err
 		}

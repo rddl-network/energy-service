@@ -8,9 +8,11 @@ import (
 	"testing"
 
 	"github.com/rddl-network/logger-service/internal/config"
+	"github.com/rddl-network/logger-service/internal/influxdb"
 	"github.com/rddl-network/logger-service/internal/model"
 	"github.com/rddl-network/logger-service/internal/server"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestHandleEnergyData(t *testing.T) {
@@ -19,7 +21,12 @@ func TestHandleEnergyData(t *testing.T) {
 	assert.NoError(t, err, "Failed to load configuration")
 	_ = config.GetConfig()
 
-	srv, err := server.NewServer()
+	// Set up mock InfluxDB client
+	mockInflux := &influxdb.MockClient{}
+	mockInflux.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockInflux.On("Close").Return()
+
+	srv, err := server.NewServer(mockInflux)
 	if err != nil {
 		t.Fatalf("Failed to create server: %v", err)
 	}

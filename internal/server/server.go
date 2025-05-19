@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"html/template"
 	"log"
@@ -23,19 +24,32 @@ type Server struct {
 	db                  *database.Database
 	utils               *utils.Utils
 	energyDataFileMutex sync.Mutex
+	influxWriteAPI      interface {
+		WritePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts interface{}) error
+	}
 }
 
-// NewServer creates a new server instance
-func NewServer() (*Server, error) {
+// NewServer creates a new server instance, now accepts influxWriteAPI
+func NewServer(writeAPI interface {
+	WritePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts interface{}) error
+}) (*Server, error) {
 	db, err := database.NewDatabase()
 	if err != nil {
 		return nil, err
 	}
 
 	return &Server{
-		db:    db,
-		utils: &utils.Utils{},
+		db:             db,
+		utils:          &utils.Utils{},
+		influxWriteAPI: writeAPI,
 	}, nil
+}
+
+// SetInfluxWriteAPI allows injecting a custom InfluxDB write API (for testing/mocking)
+func (s *Server) SetInfluxWriteAPI(writeAPI interface {
+	WritePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts interface{}) error
+}) {
+	s.influxWriteAPI = writeAPI
 }
 
 // Close shuts down the server and closes the database

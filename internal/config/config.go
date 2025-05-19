@@ -36,10 +36,10 @@ func defaultConfig() *Config {
 			DataFile: "energy_data.json",
 		},
 		InfluxDB: InfluxDBConfig{
-			URL:    "https://eu-central-1-1.aws.cloud2.influxdata.com",
-			Token:  "TBUV2ciRQYeM2KUOGJmt1V0c7jv0CqxYhcSaGpELe3YLnc3Tc2dcQEAbrZplmDcb-HSBLbPr9kAXPHpvPf8ezw==",
-			Org:    "713a74226aae814d",
-			Bucket: "0ffa8c3c2d0957a8",
+			URL:    "http://localhost:8086",
+			Token:  "",
+			Org:    "",
+			Bucket: "",
 		},
 	}
 }
