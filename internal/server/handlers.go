@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/rddl-network/energy-service/internal/database"
 )
@@ -17,9 +18,10 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	// For JSON data
 	var formData struct {
-		ZigbeeID      string `json:"zigbee_id"`
-		LiquidAddress string `json:"liquid_address"`
-		DeviceName    string `json:"device_name"`
+		ZigbeeID          string `json:"zigbee_id"`
+		LiquidAddress     string `json:"liquid_address"`
+		DeviceName        string `json:"device_name"`
+		PlanetmintAddress string `json:"planetmint_address"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -31,7 +33,10 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	zigbeeID := formData.ZigbeeID
 	liquidAddress := formData.LiquidAddress
+	plmntAddress := formData.PlanetmintAddress
 	deviceName := formData.DeviceName
+
+	metadataJson := "{ \"Device\": \"}" + deviceName + "\"}"
 
 	// Validate form data
 	if zigbeeID == "" || liquidAddress == "" || deviceName == "" {
@@ -46,13 +51,22 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if Zigbee ID already exists
-	_, exists, err := s.db.GetDevice(zigbeeID)
+	_, existsDB, err := s.db.GetDevice(zigbeeID)
 	if err != nil {
 		sendJSONResponse(w, Response{Error: "Database error"}, http.StatusInternalServerError)
 		return
 	}
+	existsPlmnt, err := s.plmntClient.IsZigbeeRegistered(zigbeeID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
 
-	if exists {
+		} else {
+			sendJSONResponse(w, Response{Error: "Database error"}, http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if existsDB || existsPlmnt {
 		sendJSONResponse(w, Response{Error: fmt.Sprintf("Zigbee ID %s already exists", zigbeeID)}, http.StatusBadRequest)
 		return
 	}
@@ -63,7 +77,11 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		sendJSONResponse(w, Response{Error: "Failed to add device"}, http.StatusInternalServerError)
 		return
 	}
-
+	err = s.plmntClient.RegisterDER(zigbeeID, plmntAddress, liquidAddress, metadataJson)
+	if err != nil {
+		sendJSONResponse(w, Response{Error: "Failed to attest device to Planetmint"}, http.StatusInternalServerError)
+		return
+	}
 	sendJSONResponse(w, Response{Message: fmt.Sprintf("Device %s registered successfully", deviceName)}, http.StatusCreated)
 }
 

@@ -9,8 +9,15 @@ import (
 
 // Config represents the application configuration
 type Config struct {
-	Server   ServerConfig   `toml:"server"`
-	InfluxDB InfluxDBConfig `toml:"influxdb"`
+	Server     ServerConfig     `toml:"server"`
+	InfluxDB   InfluxDBConfig   `toml:"influxdb"`
+	Planetmint PlanetmintConfig `toml:"planetmint"`
+}
+
+type PlanetmintConfig struct {
+	Actor   string `json:"actor"`
+	ChainID string `json:"chain-id"`
+	RPCHost string `json:"rpc-host"`
 }
 
 // ServerConfig holds server-related configuration
@@ -28,7 +35,7 @@ type InfluxDBConfig struct {
 	Bucket string `toml:"bucket"` // InfluxDB bucket
 }
 
-func defaultConfig() *Config {
+func DefaultConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
 			Port:     8080,
@@ -41,6 +48,11 @@ func defaultConfig() *Config {
 			Org:    "",
 			Bucket: "",
 		},
+		Planetmint: PlanetmintConfig{
+			Actor:   "plmnt1269dcjl2z8yhzefu2rakuk2wpq7n0pn9mevyrk",
+			ChainID: "planetmintgo",
+			RPCHost: "localhost:9090",
+		},
 	}
 }
 
@@ -52,7 +64,7 @@ func LoadConfig(filePath string) (*Config, error) {
 		return config, nil
 	}
 
-	cfg := defaultConfig()
+	cfg := DefaultConfig()
 
 	data, err := os.ReadFile(filePath)
 	if err == nil {

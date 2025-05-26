@@ -5,7 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/planetmint/planetmint-go/app"
+	"github.com/planetmint/planetmint-go/lib"
 	"github.com/rddl-network/energy-service/internal/config"
+	"github.com/rddl-network/energy-service/internal/planetmint"
 	"github.com/rddl-network/energy-service/internal/server"
 
 	"context"
@@ -58,6 +61,14 @@ func writeContentToFiles() {
 	}
 }
 
+var libConfig *lib.Config
+
+func init() {
+	encodingConfig := app.MakeEncodingConfig()
+	libConfig = lib.GetConfig()
+	libConfig.SetEncodingConfig(encodingConfig)
+}
+
 func main() {
 	// Create templates
 	writeContentToFiles()
@@ -76,8 +87,15 @@ func main() {
 	writeAPI := client.WriteAPIBlocking(cfg.InfluxDB.Org, cfg.InfluxDB.Bucket)
 	adapter := &InfluxWriteAPIAdapter{api: writeAPI}
 
+	libConfig.SetChainID(cfg.Planetmint.ChainID)
+	grpcConn, err := planetmint.SetupGRPCConnection(cfg)
+	if err != nil {
+		log.Fatalf("Connection to Planetmint failed: %v", err)
+	}
+	plmntClient := planetmint.NewPlanetmintClient(cfg.Planetmint.Actor, grpcConn)
+
 	// Create and configure server
-	srv, err := server.NewServer(adapter)
+	srv, err := server.NewServer(plmntClient, adapter)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
 	}

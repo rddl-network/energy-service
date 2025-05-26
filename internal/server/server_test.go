@@ -10,6 +10,7 @@ import (
 	"github.com/rddl-network/energy-service/internal/config"
 	"github.com/rddl-network/energy-service/internal/influxdb"
 	"github.com/rddl-network/energy-service/internal/model"
+	"github.com/rddl-network/energy-service/internal/planetmint"
 	"github.com/rddl-network/energy-service/internal/server"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -26,7 +27,9 @@ func TestHandleEnergyData(t *testing.T) {
 	mockInflux.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mockInflux.On("Close").Return()
 
-	srv, err := server.NewServer(mockInflux)
+	mockPlmntclient := &planetmint.MockPlanetmintClient{}
+
+	srv, err := server.NewServer(mockPlmntclient, mockInflux)
 	if err != nil {
 		t.Fatalf("Failed to create server: %v", err)
 	}

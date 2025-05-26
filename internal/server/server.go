@@ -10,6 +10,7 @@ import (
 
 	"github.com/rddl-network/energy-service/internal/database"
 	"github.com/rddl-network/energy-service/internal/model"
+	service "github.com/rddl-network/energy-service/internal/planetmint"
 	"github.com/rddl-network/energy-service/internal/utils"
 )
 
@@ -27,12 +28,15 @@ type Server struct {
 	influxWriteAPI      interface {
 		WritePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts interface{}) error
 	}
+	plmntClient service.IPlanetmintClient
 }
 
 // NewServer creates a new server instance, now accepts influxWriteAPI
-func NewServer(writeAPI interface {
-	WritePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts interface{}) error
-}) (*Server, error) {
+func NewServer(plmntClient service.IPlanetmintClient,
+	writeAPI interface {
+		WritePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts interface{}) error
+	},
+) (*Server, error) {
 	db, err := database.NewDatabase()
 	if err != nil {
 		return nil, err
@@ -42,6 +46,7 @@ func NewServer(writeAPI interface {
 		db:             db,
 		utils:          &utils.Utils{},
 		influxWriteAPI: writeAPI,
+		plmntClient:    plmntClient,
 	}, nil
 }
 
