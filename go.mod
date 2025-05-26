@@ -2,8 +2,6 @@ module github.com/rddl-network/energy-service
 
 go 1.22
 
-toolchain go1.24.2
-
 require (
 	github.com/cosmos/cosmos-sdk v0.47.14
 	github.com/influxdata/influxdb-client-go v1.4.0
