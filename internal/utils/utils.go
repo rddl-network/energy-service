@@ -11,9 +11,10 @@ type Utils struct{}
 
 // IsValidZigbeeID validates Zigbee ID format
 func (u *Utils) IsValidZigbeeID(id string) bool {
-	// Zigbee IDs are typically 16 hexadecimal characters
-	regex := regexp.MustCompile(`^[0-9A-Fa-f]{16}$`)
-	return regex.MatchString(id)
+	// Zigbee IDs: 16 hex or UUID with optional _N suffix
+	zigbee16 := regexp.MustCompile(`^[0-9A-Fa-f]{16}$`)
+	uuidPattern := regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?:_\d+)?$`)
+	return zigbee16.MatchString(id) || uuidPattern.MatchString(id)
 }
 
 // MapEnergyDataToTime maps a 96-float array to a two-dimensional array with corresponding daytime
