@@ -100,7 +100,7 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 	var energyData model.EnergyData
 
 	if err := json.NewDecoder(r.Body).Decode(&energyData); err != nil {
-		http.Error(w, "Failed to decode JSON", http.StatusBadRequest)
+		sendJSONResponse(w, Response{Error: "Failed to decode JSON"}, http.StatusBadRequest)
 		return
 	}
 
@@ -109,12 +109,9 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 	go s.writeJSON2File(energyData)
 	err := s.write2InfluxDB(energyData)
 	if err != nil {
-		http.Error(w, "Failed to write to InfluxDB", http.StatusInternalServerError)
+		sendJSONResponse(w, Response{Error: "Failed to write to database"}, http.StatusInternalServerError)
+		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write([]byte("Energy data received and written to InfluxDB successfully"))
-	if err != nil {
-		log.Printf("Error writing response: %v", err)
-	}
+	sendJSONResponse(w, Response{Message: "Energy data received and written to database successfully"}, http.StatusOK)
 }
