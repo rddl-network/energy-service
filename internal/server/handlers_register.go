@@ -19,6 +19,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		LiquidAddress     string `json:"liquid_address"`
 		DeviceName        string `json:"device_name"`
 		PlanetmintAddress string `json:"planetmint_address"`
+		DeviceType        string `json:"device_type"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -32,11 +33,12 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	liquidAddress := formData.LiquidAddress
 	plmntAddress := formData.PlanetmintAddress
 	deviceName := formData.DeviceName
+	deviceType := formData.DeviceType
 
 	metadataJson := "{ \"Device\": \"}" + deviceName + "\"}"
 
 	// Validate form data
-	if zigbeeID == "" || liquidAddress == "" || deviceName == "" {
+	if zigbeeID == "" || liquidAddress == "" || deviceName == "" || deviceType == "" || plmntAddress == "" {
 		sendJSONResponse(w, Response{Error: "All fields are required"}, http.StatusBadRequest)
 		return
 	}
@@ -69,7 +71,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add device to database
-	err = s.db.AddDevice(zigbeeID, liquidAddress, deviceName)
+	err = s.db.AddDevice(zigbeeID, liquidAddress, deviceName, deviceType, plmntAddress)
 	if err != nil {
 		sendJSONResponse(w, Response{Error: "Failed to add device"}, http.StatusInternalServerError)
 		return

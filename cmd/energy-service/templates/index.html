@@ -70,6 +70,42 @@
                         required
                     >
                 </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-2" for="device_type">
+                        Device Type*
+                    </label>
+                    <select
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        id="device_type"
+                        name="device_type"
+                        required
+                    >
+                        <option value="">Select device type</option>
+                        <option>Air Conditioning</option>
+                        <option>Blenders</option>
+                        <option>Chargers</option>
+                        <option>Clothes Dryers</option>
+                        <option>Coffee Machine</option>
+                        <option>Computers</option>
+                        <option>Dishwasher</option>
+                        <option>Electric Ovens</option>
+                        <option>Freezers</option>
+                        <option>Game Consoles</option>
+                        <option>Hair Dryers</option>
+                        <option>Heating</option>
+                        <option>Kettles</option>
+                        <option>Lighting</option>
+                        <option>Microwaves</option>
+                        <option>Refrigerator</option>
+                        <option>Routers/Modems</option>
+                        <option>Stoves</option>
+                        <option>Televisions</option>
+                        <option>Toasters</option>
+                        <option>Ventilation</option>
+                        <option>Washing Wachine</option>
+                        <option>Water Water Heaters</option>
+                    </select>
+                </div>
                 <div class="flex justify-between">
                     <button
                         type="submit"
@@ -99,6 +135,7 @@
                             <th class="border px-4 py-2">Zigbee ID</th>
                             <th class="border px-4 py-2">Liquid Address</th>
                             <th class="border px-4 py-2">Device Name</th>
+                            <th class="border px-4 py-2">Device Type</th>
                             <th class="border px-4 py-2">Timestamp</th>
                         </tr>
                     </thead>
@@ -143,13 +180,14 @@
                 const liquidAddress = document.getElementById('liquid_address').value;
                 const deviceName = document.getElementById('device_name').value;
                 const planetmintAddress = document.getElementById('planetmint_address').value;
-                
+                const deviceType = document.getElementById('device_type').value;
                 // Create JSON payload
                 const data = {
                     zigbee_id: zigbeeId,
                     liquid_address: liquidAddress,
                     device_name: deviceName,
-                    planetmint_address: planetmintAddress
+                    planetmint_address: planetmintAddress,
+                    device_type: deviceType
                 };
                 
                 //const formData = new URLSearchParams(new FormData(form));
@@ -216,6 +254,7 @@
                         row.innerHTML = '<td class="border px-4 py-2 font-mono">' + zigbee_id + '</td>' +
                             '<td class="border px-4 py-2">' + data.liquid_address + '</td>' +
                             '<td class="border px-4 py-2">' + data.device_name + '</td>' +
+                            '<td class="border px-4 py-2">' + data.device_type + '</td>' +
                             '<td class="border px-4 py-2 text-sm">' + new Date(data.timestamp).toLocaleString() + '</td>';
                         
                         devicesTable.appendChild(row);

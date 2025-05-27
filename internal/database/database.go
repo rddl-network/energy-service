@@ -11,9 +11,11 @@ import (
 
 // Device represents a registered device
 type Device struct {
-	LiquidAddress string    `json:"liquid_address"`
-	DeviceName    string    `json:"device_name"`
-	Timestamp     time.Time `json:"timestamp"`
+	LiquidAddress     string    `json:"liquid_address"`
+	DeviceName        string    `json:"device_name"`
+	DeviceType        string    `json:"device_type"`
+	PlanetmintAddress string    `json:"planetmint_address"`
+	Timestamp         time.Time `json:"timestamp"`
 }
 
 // Database is a LevelDB key-value store using Zigbee ID as the key
@@ -43,14 +45,16 @@ func (db *Database) Close() {
 }
 
 // AddDevice adds a new device to the database
-func (db *Database) AddDevice(zigbeeID, liquidAddress, deviceName string) error {
+func (db *Database) AddDevice(zigbeeID, liquidAddress, deviceName, deviceType, planetmintAddress string) error {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
 	device := Device{
-		LiquidAddress: liquidAddress,
-		DeviceName:    deviceName,
-		Timestamp:     time.Now(),
+		LiquidAddress:     liquidAddress,
+		DeviceName:        deviceName,
+		DeviceType:        deviceType,
+		PlanetmintAddress: planetmintAddress,
+		Timestamp:         time.Now(),
 	}
 
 	// Serialize the device to JSON

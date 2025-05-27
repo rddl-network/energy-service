@@ -23,8 +23,8 @@ type PlanetmintConfig struct {
 // ServerConfig holds server-related configuration
 type ServerConfig struct {
 	Port     int    `toml:"port"`      // Port for the HTTP server
-	LogLevel string `toml:"log_level"` // Log level: debug, info, warn, error
-	DataFile string `toml:"data_file"` // Path to the data file
+	LogLevel string `toml:"log-level"` // Log level: debug, info, warn, error
+	DataFile string `toml:"data-file"` // Path to the data file
 }
 
 // InfluxDBConfig holds InfluxDB-related configuration
@@ -49,7 +49,7 @@ func DefaultConfig() *Config {
 			Bucket: "",
 		},
 		Planetmint: PlanetmintConfig{
-			Actor:   "plmnt1269dcjl2z8yhzefu2rakuk2wpq7n0pn9mevyrk",
+			Actor:   "plmnt17keyseuam6qz4t49lg0e75a8y7jvcj03fn635z",
 			ChainID: "planetmintgo",
 			RPCHost: "localhost:9090",
 		},

@@ -21,6 +21,7 @@ func (s *Server) handleGetDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Optionally, you could transform the map to a slice if you want to control the order or add extra fields
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(devices)
 	if err != nil {
