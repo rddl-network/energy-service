@@ -2,6 +2,7 @@ package planetmint
 
 import (
 	"context"
+	"log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	ctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -48,7 +49,6 @@ func SetupGRPCConnection(cfg *config.Config) (conn *grpc.ClientConn, err error) 
 }
 
 func (pmc *PlanetmintClient) RegisterDER(zigbee_id string, plmntAddress string, lidquidAddress string, metadatajson string) error {
-
 	der := dertypes.DER{
 		ZigbeeID:      zigbee_id,
 		PlmntAddress:  plmntAddress,
@@ -66,6 +66,7 @@ func (pmc *PlanetmintClient) RegisterDER(zigbee_id string, plmntAddress string, 
 	if _, err := lib.BroadcastTxWithFileLock(addr, msg); err != nil {
 		return err
 	}
+	log.Printf("[DEBUG] RegisterDER: Successfully registered DER for ZigbeeID %s", zigbee_id)
 	return nil
 }
 
@@ -77,6 +78,13 @@ func (pmc *PlanetmintClient) IsZigbeeRegistered(zigbeeID string) (registered boo
 	}
 	if res != nil && res.Der != nil {
 		registered = res.Der.ZigbeeID == zigbeeID
+		if registered {
+			log.Printf("[DEBUG] IsZigbeeRegistered: ZigbeeID %s is registered", zigbeeID)
+		} else {
+			log.Printf("[DEBUG] IsZigbeeRegistered: ZigbeeID %s is not registered", zigbeeID)
+		}
+	} else {
+		log.Printf("[DEBUG] IsZigbeeRegistered: No DER found for ZigbeeID %s", zigbeeID)
 	}
 	return
 }
