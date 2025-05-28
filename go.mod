@@ -6,8 +6,8 @@ require (
 	github.com/cosmos/cosmos-sdk v0.47.14
 	github.com/influxdata/influxdb-client-go v1.4.0
 	github.com/pelletier/go-toml v1.9.5
-	github.com/planetmint/planetmint-go v0.12.13-0.20250522090958-9eba7d663288
-	github.com/planetmint/planetmint-go/lib v0.8.0
+	github.com/planetmint/planetmint-go v0.13.1
+	github.com/planetmint/planetmint-go/lib v0.9.0
 	github.com/stretchr/testify v1.9.0
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d
 	google.golang.org/grpc v1.62.1
