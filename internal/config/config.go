@@ -15,9 +15,9 @@ type Config struct {
 }
 
 type PlanetmintConfig struct {
-	Actor   string `json:"actor"`
-	ChainID string `json:"chain-id"`
-	RPCHost string `json:"rpc-host"`
+	Actor   string `toml:"actor"`
+	ChainID string `toml:"chain-id"`
+	RPCHost string `toml:"rpc-host"`
 }
 
 // ServerConfig holds server-related configuration
@@ -50,7 +50,7 @@ func DefaultConfig() *Config {
 		},
 		Planetmint: PlanetmintConfig{
 			Actor:   "plmnt17keyseuam6qz4t49lg0e75a8y7jvcj03fn635z",
-			ChainID: "planetmintgo",
+			ChainID: "testnetwork",
 			RPCHost: "localhost:9090",
 		},
 	}
