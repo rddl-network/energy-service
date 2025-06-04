@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/rddl-network/energy-service/internal/model"
 )
@@ -24,8 +25,23 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Received energy data: %+v", energyData)
 
+	existsPlmnt, err := s.plmntClient.IsZigbeeRegistered(energyData.ZigbeeID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			sendJSONResponse(w, Response{Error: "Inspelning not found"}, http.StatusBadRequest)
+		} else {
+			sendJSONResponse(w, Response{Error: "Database error"}, http.StatusInternalServerError)
+			return
+		}
+	}
+	if !existsPlmnt {
+		log.Printf("Zigbee ID %s not registered in Planetmint", energyData.ZigbeeID)
+		sendJSONResponse(w, Response{Error: "Inspelning not registered in Planetmint"}, http.StatusBadRequest)
+		return
+	}
+
 	go s.writeJSON2File(energyData)
-	err := s.write2InfluxDB(energyData)
+	err = s.write2InfluxDB(energyData)
 	if err != nil {
 		sendJSONResponse(w, Response{Error: "Failed to write to database"}, http.StatusInternalServerError)
 		return
