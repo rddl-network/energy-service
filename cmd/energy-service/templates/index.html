@@ -113,37 +113,10 @@
                     >
                         Register Device
                     </button>
-                    <button
-                        type="button"
-                        id="toggle-db-btn"
-                        class="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                    >
-                        View Database
-                    </button>
                 </div>
             </form>
           
             <div id="alert" class="mt-4 p-3 border rounded hidden"></div>
-        </div>
-        
-        <div id="database-container" class="hidden">
-            <h2 class="text-xl font-semibold mb-4">Database Entries</h2>
-            <div class="overflow-x-auto">
-                <table class="w-full border-collapse table-auto">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="border px-4 py-2">Zigbee ID</th>
-                            <th class="border px-4 py-2">Liquid Address</th>
-                            <th class="border px-4 py-2">Device Name</th>
-                            <th class="border px-4 py-2">Device Type</th>
-                            <th class="border px-4 py-2">Timestamp</th>
-                        </tr>
-                    </thead>
-                    <tbody id="devices-table">
-                        <!-- Devices will be added here dynamically -->
-                    </tbody>
-                </table>
-            </div>
         </div>
     </div>
 
@@ -151,23 +124,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('registration-form');
             const alertBox = document.getElementById('alert');
-            const toggleDbBtn = document.getElementById('toggle-db-btn');
-            const dbContainer = document.getElementById('database-container');
-            const devicesTable = document.getElementById('devices-table');
-            
-            // Toggle database visibility
-            toggleDbBtn.addEventListener('click', function() {
-                const isHidden = dbContainer.classList.contains('hidden');
-                
-                if (isHidden) {
-                    fetchDevices();
-                    dbContainer.classList.remove('hidden');
-                    toggleDbBtn.textContent = 'Hide Database';
-                } else {
-                    dbContainer.classList.add('hidden');
-                    toggleDbBtn.textContent = 'View Database';
-                }
-            });
             
             // Submit form
             form.addEventListener('submit', function(e) {
@@ -207,11 +163,6 @@
                     } else {
                         showAlert(data.message, 'success');
                         form.reset();
-                        
-                        // Update database table if visible
-                        if (!dbContainer.classList.contains('hidden')) {
-                            fetchDevices();
-                        }
                     }
                 })
                 .catch(error => {
@@ -233,36 +184,6 @@
                 setTimeout(() => {
                     alertBox.classList.add('hidden');
                 }, 5000);
-            }
-            
-            function fetchDevices() {
-                fetch('/api/devices')
-                .then(response => response.json())
-                .then(devices => {
-                    devicesTable.innerHTML = '';
-                    
-                    if (Object.keys(devices).length === 0) {
-                        const emptyRow = document.createElement('tr');
-                        emptyRow.innerHTML = '<td colspan="4" class="border px-4 py-2 text-center text-gray-500">No devices registered yet.</td>';
-                        devicesTable.appendChild(emptyRow);
-                        return;
-                    }
-                    
-                    for (const [zigbee_id, data] of Object.entries(devices)) {
-                        const row = document.createElement('tr');
-                        
-                        row.innerHTML = '<td class="border px-4 py-2 font-mono">' + zigbee_id + '</td>' +
-                            '<td class="border px-4 py-2">' + data.liquid_address + '</td>' +
-                            '<td class="border px-4 py-2">' + data.device_name + '</td>' +
-                            '<td class="border px-4 py-2">' + data.device_type + '</td>' +
-                            '<td class="border px-4 py-2 text-sm">' + new Date(data.timestamp).toLocaleString() + '</td>';
-                        
-                        devicesTable.appendChild(row);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching devices:', error);
-                });
             }
         });
     </script>

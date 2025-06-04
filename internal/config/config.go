@@ -25,6 +25,7 @@ type ServerConfig struct {
 	Port     int    `toml:"port"`      // Port for the HTTP server
 	LogLevel string `toml:"log-level"` // Log level: debug, info, warn, error
 	DataFile string `toml:"data-file"` // Path to the data file
+	Password string `toml:"password"`  // Optional: password for protected endpoints
 }
 
 // InfluxDBConfig holds InfluxDB-related configuration
@@ -41,6 +42,7 @@ func DefaultConfig() *Config {
 			Port:     8080,
 			LogLevel: "info",
 			DataFile: "energy_data.json",
+			// Password: no default, must be set in config file
 		},
 		InfluxDB: InfluxDBConfig{
 			URL:    "http://localhost:8086",
@@ -57,6 +59,9 @@ func DefaultConfig() *Config {
 }
 
 var config *Config
+
+// ConfigTestOnly is only for test injection
+var ConfigTestOnly **Config = &config
 
 // LoadConfig loads the configuration from a TOML file
 func LoadConfig(filePath string) (*Config, error) {

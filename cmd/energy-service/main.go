@@ -101,9 +101,10 @@ func main() {
 	}
 	defer srv.Close() // Ensure database is closed properly
 
-	srv.Routes()
+	mux := http.NewServeMux()
+	srv.Routes(mux)
 
 	// Start the server
 	log.Println("Server starting on http://localhost:" + strconv.Itoa(cfg.Server.Port))
-	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(cfg.Server.Port), nil))
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(cfg.Server.Port), mux))
 }

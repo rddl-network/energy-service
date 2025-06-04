@@ -35,8 +35,8 @@ func TestHandleEnergyData(t *testing.T) {
 	}
 	defer srv.Close()
 
-	// Register routes
-	srv.Routes()
+	mux := http.NewServeMux()
+	srv.Routes(mux)
 
 	// Create a sample energy data payload
 	payload := model.EnergyData{
@@ -62,8 +62,8 @@ func TestHandleEnergyData(t *testing.T) {
 	// Create a response recorder to capture the response
 	rr := httptest.NewRecorder()
 
-	// Serve the request using the default mux
-	http.DefaultServeMux.ServeHTTP(rr, req)
+	// Serve the request using the test mux
+	mux.ServeHTTP(rr, req)
 
 	// Check the status code
 	if status := rr.Code; status != http.StatusOK {

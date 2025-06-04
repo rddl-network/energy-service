@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/rddl-network/energy-service/internal/config"
 	"github.com/rddl-network/energy-service/internal/database"
 )
 
@@ -12,6 +13,17 @@ import (
 func (s *Server) handleGetDevices(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Password protection using config
+	cfgPwd := ""
+	if config.GetConfig() != nil {
+		cfgPwd = config.GetConfig().Server.Password
+	}
+	pwd := r.URL.Query().Get("pwd")
+	if cfgPwd == "" || pwd != cfgPwd {
+		http.Error(w, "Unauthorized: missing or incorrect password", http.StatusUnauthorized)
 		return
 	}
 

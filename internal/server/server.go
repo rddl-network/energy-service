@@ -54,19 +54,19 @@ func (s *Server) Close() {
 }
 
 // Routes sets up the HTTP routes for the server
-func (s *Server) Routes() {
+func (s *Server) Routes(mux *http.ServeMux) {
 	// Serve static files
 	fs := http.FileServer(http.Dir("static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	// Main page
-	http.HandleFunc("/", s.handleIndex)
+	mux.HandleFunc("/", s.handleIndex)
 
 	// API endpoints
-	http.HandleFunc("/register", s.handleRegister)
-	http.HandleFunc("/api/devices", s.handleGetDevices)
-	http.HandleFunc("/api/devices/", s.handleGetDevice)
-	http.HandleFunc("/api/energy", s.handleEnergyData)
+	mux.HandleFunc("/register", s.handleRegister)
+	mux.HandleFunc("/api/devices", s.handleGetDevices)
+	mux.HandleFunc("/api/devices/", s.handleGetDevice)
+	mux.HandleFunc("/api/energy", s.handleEnergyData)
 }
 
 // handleIndex renders the main page
