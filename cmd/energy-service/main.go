@@ -10,6 +10,7 @@ import (
 	"github.com/rddl-network/energy-service/internal/config"
 	"github.com/rddl-network/energy-service/internal/planetmint"
 	"github.com/rddl-network/energy-service/internal/server"
+	"github.com/rddl-network/energy-service/internal/database"
 
 	"context"
 	"time"
@@ -95,7 +96,11 @@ func main() {
 	plmntClient := planetmint.NewPlanetmintClient(cfg.Planetmint.Actor, grpcConn)
 
 	// Create and configure server
-	srv, err := server.NewServer(plmntClient, adapter)
+	db, err := database.NewDatabase()
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+	srv, err := server.NewServer(plmntClient, adapter, db)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
 	}

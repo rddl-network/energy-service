@@ -160,3 +160,22 @@ func (db *Database) GetByLiquidAddress(liquidAddress string) (map[string]Device,
 
 	return result, nil
 }
+
+// ExistsZigbeeID returns true if the Zigbee ID exists in the database
+func (db *Database) ExistsZigbeeID(zigbeeID string) (bool, error) {
+	_, exists, err := db.GetDevice(zigbeeID)
+	return exists, err
+}
+
+// DeviceStore abstracts device DB operations for mocking
+//go:generate mockery --name=DeviceStore
+// DeviceStore is implemented by *Database and MockDatabase
+// Used for dependency injection in server
+//
+type DeviceStore interface {
+	GetDevice(zigbeeID string) (Device, bool, error)
+	AddDevice(zigbeeID, liquidAddress, deviceName, deviceType, planetmintAddress string) error
+	ExistsZigbeeID(zigbeeID string) (bool, error)
+	GetAllDevices() (map[string]Device, error)
+	GetByLiquidAddress(liquidAddress string) (map[string]Device, error)
+}

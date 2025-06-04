@@ -19,8 +19,9 @@ type Response struct {
 }
 
 // Server represents the web server
+// db is now DeviceStore (interface)
 type Server struct {
-	db                  *database.Database
+	db                  database.DeviceStore
 	utils               *utils.Utils
 	energyDataFileMutex sync.Mutex
 	influxWriteAPI      interface {
@@ -29,17 +30,14 @@ type Server struct {
 	plmntClient service.IPlanetmintClient
 }
 
-// NewServer creates a new server instance, now accepts influxWriteAPI
-func NewServer(plmntClient service.IPlanetmintClient,
+// NewServer creates a new server instance, now accepts influxWriteAPI and DeviceStore
+func NewServer(
+	plmntClient service.IPlanetmintClient,
 	writeAPI interface {
 		WritePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts interface{}) error
 	},
+	db database.DeviceStore, // <-- new param
 ) (*Server, error) {
-	db, err := database.NewDatabase()
-	if err != nil {
-		return nil, err
-	}
-
 	return &Server{
 		db:             db,
 		utils:          &utils.Utils{},
@@ -48,9 +46,30 @@ func NewServer(plmntClient service.IPlanetmintClient,
 	}, nil
 }
 
-// Close shuts down the server and closes the database
+// NewDefaultServer creates a new server with a real database (for production)
+func NewDefaultServer(
+	plmntClient service.IPlanetmintClient,
+	writeAPI interface {
+		WritePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts interface{}) error
+	},
+) (*Server, error) {
+	db, err := database.NewDatabase()
+	if err != nil {
+		return nil, err
+	}
+	return &Server{
+		db:             db,
+		utils:          &utils.Utils{},
+		influxWriteAPI: writeAPI,
+		plmntClient:    plmntClient,
+	}, nil
+}
+
+// Close shuts down the server and closes the database if possible
 func (s *Server) Close() {
-	s.db.Close()
+	if closer, ok := s.db.(interface{ Close() }); ok {
+		closer.Close()
+	}
 }
 
 // Routes sets up the HTTP routes for the server

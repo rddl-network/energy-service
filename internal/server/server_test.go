@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/rddl-network/energy-service/internal/config"
+	"github.com/rddl-network/energy-service/internal/database"
 	"github.com/rddl-network/energy-service/internal/influxdb"
 	"github.com/rddl-network/energy-service/internal/model"
 	"github.com/rddl-network/energy-service/internal/planetmint"
@@ -22,14 +23,15 @@ func TestHandleEnergyData(t *testing.T) {
 	assert.NoError(t, err, "Failed to load configuration")
 	_ = config.GetConfig()
 
-	// Set up mock InfluxDB client
-	mockInflux := &influxdb.MockClient{}
-	mockInflux.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	mockInflux.On("Close").Return()
+	// Set up mocks
+	plmntMock := &planetmint.MockPlanetmintClient{}
+	influxMock := &influxdb.MockClient{}
+	dbMock := &database.MockDatabase{}
+	influxMock.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	influxMock.On("Close").Return()
+	plmntMock.On("IsZigbeeRegistered", "12345").Return(true, nil)
 
-	mockPlmntclient := &planetmint.MockPlanetmintClient{}
-
-	srv, err := server.NewServer(mockPlmntclient, mockInflux)
+	srv, err := server.NewServer(plmntMock, influxMock, dbMock)
 	if err != nil {
 		t.Fatalf("Failed to create server: %v", err)
 	}
@@ -71,4 +73,16 @@ func TestHandleEnergyData(t *testing.T) {
 	}
 
 	// Optionally, verify the server's internal state or response if needed
+}
+
+func setupServerWithMocks(t *testing.T) (*server.Server, *http.ServeMux, *planetmint.MockPlanetmintClient, *influxdb.MockClient, *database.MockDatabase) {
+	plmntMock := &planetmint.MockPlanetmintClient{}
+	influxMock := &influxdb.MockClient{}
+	dbMock := &database.MockDatabase{}
+	srv, err := server.NewServer(plmntMock, influxMock, dbMock)
+	assert.NoError(t, err)
+	mux := http.NewServeMux()
+	srv.Routes(mux)
+	t.Cleanup(func() { srv.Close() })
+	return srv, mux, plmntMock, influxMock, dbMock
 }

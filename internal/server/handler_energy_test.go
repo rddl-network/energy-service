@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/rddl-network/energy-service/internal/config"
+	"github.com/rddl-network/energy-service/internal/database"
 	"github.com/rddl-network/energy-service/internal/influxdb"
 	"github.com/rddl-network/energy-service/internal/model"
 	"github.com/rddl-network/energy-service/internal/planetmint"
@@ -16,10 +17,10 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func setupEnergyTestServer(t *testing.T, plmntMock *planetmint.MockPlanetmintClient, influxMock *influxdb.MockClient) (*server.Server, *http.ServeMux) {
+func setupEnergyTestServer(t *testing.T, plmntMock *planetmint.MockPlanetmintClient, influxMock *influxdb.MockClient, dbMock *database.MockDatabase) (*server.Server, *http.ServeMux) {
 	_, err := config.LoadConfig("")
 	assert.NoError(t, err, "Failed to load configuration")
-	srv, err := server.NewServer(plmntMock, influxMock)
+	srv, err := server.NewServer(plmntMock, influxMock, dbMock)
 	assert.NoError(t, err)
 	mux := http.NewServeMux()
 	srv.Routes(mux)
@@ -30,7 +31,8 @@ func setupEnergyTestServer(t *testing.T, plmntMock *planetmint.MockPlanetmintCli
 func TestHandleEnergyData_InvalidJSON(t *testing.T) {
 	plmntMock := &planetmint.MockPlanetmintClient{}
 	influxMock := &influxdb.MockClient{}
-	_, mux := setupEnergyTestServer(t, plmntMock, influxMock)
+	dbMock := &database.MockDatabase{}
+	_, mux := setupEnergyTestServer(t, plmntMock, influxMock, dbMock)
 
 	// Send invalid JSON
 	req := httptest.NewRequest("POST", "/api/energy", bytes.NewBuffer([]byte("not a json")))
@@ -44,9 +46,10 @@ func TestHandleEnergyData_InvalidJSON(t *testing.T) {
 func TestHandleEnergyData_UnregisteredZigbeeID(t *testing.T) {
 	plmntMock := &planetmint.MockPlanetmintClient{}
 	influxMock := &influxdb.MockClient{}
+	dbMock := &database.MockDatabase{}
 	// Mock IsZigbeeRegistered to return false for any zigbeeID except "registered123"
 	plmntMock.On("IsZigbeeRegistered", mock.Anything).Return(false, nil)
-	_, mux := setupEnergyTestServer(t, plmntMock, influxMock)
+	_, mux := setupEnergyTestServer(t, plmntMock, influxMock, dbMock)
 
 	energy := model.EnergyData{
 		Version:  1,
@@ -66,10 +69,11 @@ func TestHandleEnergyData_UnregisteredZigbeeID(t *testing.T) {
 func TestHandleEnergyData_Valid(t *testing.T) {
 	plmntMock := &planetmint.MockPlanetmintClient{}
 	influxMock := &influxdb.MockClient{}
+	dbMock := &database.MockDatabase{}
 	// Mock IsZigbeeRegistered to return true for "registered123"
 	plmntMock.On("IsZigbeeRegistered", "registered123").Return(true, nil)
 	influxMock.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	_, mux := setupEnergyTestServer(t, plmntMock, influxMock)
+	_, mux := setupEnergyTestServer(t, plmntMock, influxMock, dbMock)
 
 	energy := model.EnergyData{
 		Version:  1,

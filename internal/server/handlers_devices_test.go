@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/rddl-network/energy-service/internal/config"
+	"github.com/rddl-network/energy-service/internal/database"
 	"github.com/rddl-network/energy-service/internal/influxdb"
 	"github.com/rddl-network/energy-service/internal/planetmint"
 	"github.com/rddl-network/energy-service/internal/server"
@@ -26,7 +27,9 @@ func setupServerWithPwd(t *testing.T, pwd string) *http.ServeMux {
 	mockInflux.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mockInflux.On("Close").Return()
 	mockPlmntclient := &planetmint.MockPlanetmintClient{}
-	srv, err := server.NewServer(mockPlmntclient, mockInflux)
+	mockDB := &database.MockDatabase{}
+	mockDB.On("GetAllDevices").Return(map[string]database.Device{}, nil)
+	srv, err := server.NewServer(mockPlmntclient, mockInflux, mockDB)
 	assert.NoError(t, err)
 	mux := http.NewServeMux()
 	srv.Routes(mux)
@@ -60,7 +63,7 @@ func TestGetDevices_InvalidPassword(t *testing.T) {
 
 func TestGetDevices_NoPasswordSetInService(t *testing.T) {
 	mux := setupServerWithPwd(t, "") // no password set
-	req := httptest.NewRequest("GET", "/api/devices?pwd=anything", nil)
+	req := httptest.NewRequest("GET", "/api/devices", nil)
 	rr := httptest.NewRecorder()
 	mux.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
