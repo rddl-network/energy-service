@@ -183,15 +183,3 @@ func TestHandleEnergyData_AlreadyExists(t *testing.T) {
 	}
 	assert.Contains(t, rr.Body.String(), "already exists")
 }
-
-func setupServerWithMocks(t *testing.T) (*server.Server, *http.ServeMux, *planetmint.MockPlanetmintClient, *influxdb.MockClient, *database.MockDatabase) {
-	plmntMock := &planetmint.MockPlanetmintClient{}
-	influxMock := &influxdb.MockClient{}
-	dbMock := &database.MockDatabase{}
-	srv, err := server.NewServer(plmntMock, influxMock, dbMock)
-	assert.NoError(t, err)
-	mux := http.NewServeMux()
-	srv.Routes(mux)
-	t.Cleanup(func() { srv.Close() })
-	return srv, mux, plmntMock, influxMock, dbMock
-}
