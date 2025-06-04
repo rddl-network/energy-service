@@ -42,8 +42,61 @@ The `energy-service` is a server application that handles device registration an
 
 ### API Endpoints
 - `POST /register`: Register a new device.
-- `GET /api/devices`: Retrieve all devices.
-- `GET /api/devices/{id}`: Retrieve a specific device by ID.
+- `GET /api/devices`: Retrieve all registered devices as a JSON array.
+- `POST /api/energy`: Upload energy data (JSON payload, see client for format).
+- `GET /api/energy/download?pwd=YOUR_PASSWORD`: Download all stored energy data as a JSON array. **Password-protected.**
+
+#### /register
+- **Method:** POST
+- **Request Body:** JSON object with device registration details. Example fields:
+  - `zigbee_id` (string, required): Unique Zigbee ID for the device
+  - `device_name` (string, required): Human-readable name
+  - `device_type` (string, required): Type/category of the device
+  - `liquid_address` (string, required): Liquid address for the device
+  - `planetmint_address` (string, required): Planetmint address for the device
+- **Response:**
+  - On success: `{ "message": "Device registered successfully" }`
+  - On error: `{ "error": "..." }` with appropriate HTTP status code (e.g., 400 for validation errors, 409 for duplicate Zigbee ID)
+
+**Example:**
+```bash
+curl -X POST http://localhost:8080/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "zigbee_id": "12345",
+    "device_name": "Living Room Plug",
+    "device_type": "Plug",
+    "liquid_address": "liq1...",
+    "planetmint_address": "pm1..."
+  }'
+```
+
+#### /api/devices
+- **Method:** GET
+- **Response:**
+  - On success: Returns a JSON array of all registered devices, each with their properties (e.g., `zigbee_id`, `device_name`, `device_type`, etc.).
+  - If no devices are registered: Returns `[]` (empty array).
+
+**Example:**
+```bash
+curl http://localhost:8080/api/devices
+```
+
+#### /api/energy/download
+- **Method:** GET
+- **Query Parameter:** `pwd` (required, must match the configured server password)
+- **Response:**
+  - On success: Returns a JSON array of all uploaded energy data entries (may be empty if no data).
+  - If the file is empty: Returns `[]` (empty array).
+  - If the file is corrupted or contains invalid JSON: Returns HTTP 500 with an error message.
+  - If the password is missing or incorrect: Returns HTTP 401 Unauthorized.
+
+**Example:**
+```bash
+curl "http://localhost:8080/api/energy/download?pwd=YOUR_PASSWORD"
+```
+
+**Note:** The download endpoint streams all valid JSON entries from the server's data file. Each entry matches the format uploaded via `/api/energy`.
 
 ### Usage
 Run the `energy-service` with the following command:

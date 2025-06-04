@@ -147,7 +147,7 @@ func TestRegister_PlanetmintError(t *testing.T) {
 	rr := httptest.NewRecorder()
 	mux.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	assert.Contains(t, rr.Body.String(), "Database error")
+	assert.Contains(t, rr.Body.String(), "Planetmint error")
 }
 
 func TestRegister_Success(t *testing.T) {

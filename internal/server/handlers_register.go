@@ -52,7 +52,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	// Check if Zigbee ID already exists
 	_, existsDB, err := s.db.GetDevice(zigbeeID)
 	if err != nil {
-		sendJSONResponse(w, Response{Error: "Database error"}, http.StatusInternalServerError)
+		sendJSONResponse(w, Response{Error: "Database error " + err.Error()}, http.StatusInternalServerError)
 		return
 	}
 	existsPlmnt, err := s.plmntClient.IsZigbeeRegistered(zigbeeID)
@@ -60,7 +60,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(err.Error(), "not found") {
 
 		} else {
-			sendJSONResponse(w, Response{Error: "Database error"}, http.StatusInternalServerError)
+			sendJSONResponse(w, Response{Error: "Planetmint error " + err.Error()}, http.StatusInternalServerError)
 			return
 		}
 	}

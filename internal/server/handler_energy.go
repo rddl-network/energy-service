@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
+	"github.com/rddl-network/energy-service/internal/config"
 	"github.com/rddl-network/energy-service/internal/model"
 )
 
@@ -75,4 +77,55 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sendJSONResponse(w, Response{Message: "Energy data received and written to database successfully"}, http.StatusOK)
+}
+
+// handleDownloadEnergyData serves the energy data JSON file, password protected
+func (s *Server) handleDownloadEnergyData(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	cfg := config.GetConfig()
+	cfgPwd := ""
+	if cfg != nil {
+		cfgPwd = cfg.Server.Password
+	}
+	pwd := r.URL.Query().Get("pwd")
+	if cfgPwd == "" || pwd != cfgPwd {
+		http.Error(w, "Unauthorized: missing or incorrect password", http.StatusUnauthorized)
+		return
+	}
+	file, err := os.Open(cfg.Server.DataFile)
+	if err != nil {
+		http.Error(w, "Failed to open data file", http.StatusInternalServerError)
+		return
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Printf("failed to close data file: %v", err)
+		}
+	}()
+	dec := json.NewDecoder(file)
+	var results []interface{}
+	for {
+		var entry interface{}
+		if err := dec.Decode(&entry); err != nil {
+			if err.Error() == "EOF" {
+				break
+			}
+			http.Error(w, "Failed to decode data file", http.StatusInternalServerError)
+			return
+		}
+		results = append(results, entry)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if len(results) == 0 {
+		if err := json.NewEncoder(w).Encode([]interface{}{}); err != nil {
+			log.Printf("failed to encode empty array: %v", err)
+		}
+		return
+	}
+	if err := json.NewEncoder(w).Encode(results); err != nil {
+		log.Printf("failed to encode results: %v", err)
+	}
 }

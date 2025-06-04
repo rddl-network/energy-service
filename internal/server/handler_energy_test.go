@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/rddl-network/energy-service/internal/config"
@@ -97,4 +98,110 @@ func TestHandleEnergyData_Valid(t *testing.T) {
 	mux.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Contains(t, rr.Body.String(), "Energy data received and written to database successfully")
+}
+
+func TestDownloadEnergyData_EmptyFile(t *testing.T) {
+	// Setup temp file
+	tempFile, err := os.CreateTemp("", "energydata_empty_*.json")
+	assert.NoError(t, err)
+	defer func() { _ = os.Remove(tempFile.Name()) }()
+	// Write nothing (empty file)
+	if err := tempFile.Close(); err != nil {
+		t.Fatalf("failed to close temp file: %v", err)
+	}
+
+	cfg := config.GetConfig()
+	cfg.Server.DataFile = tempFile.Name()
+	cfg.Server.Password = "testpwd"
+
+	srv, mux := setupEnergyTestServer(t, &planetmint.MockPlanetmintClient{}, &influxdb.MockClient{}, &database.MockDatabase{})
+	defer srv.Close()
+
+	req := httptest.NewRequest("GET", "/api/energy/download?pwd=testpwd", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
+	assert.Equal(t, "[]\n", rr.Body.String())
+}
+
+func TestDownloadEnergyData_InvalidPassword(t *testing.T) {
+	tempFile, err := os.CreateTemp("", "energydata_invalidpwd_*.json")
+	assert.NoError(t, err)
+	defer func() { _ = os.Remove(tempFile.Name()) }()
+	if err := tempFile.Close(); err != nil {
+		t.Fatalf("failed to close temp file: %v", err)
+	}
+
+	cfg := config.GetConfig()
+	cfg.Server.DataFile = tempFile.Name()
+	cfg.Server.Password = "testpwd"
+
+	srv, mux := setupEnergyTestServer(t, &planetmint.MockPlanetmintClient{}, &influxdb.MockClient{}, &database.MockDatabase{})
+	defer srv.Close()
+
+	req := httptest.NewRequest("GET", "/api/energy/download?pwd=wrongpwd", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Unauthorized")
+}
+
+func TestDownloadEnergyData_CrowdedFile(t *testing.T) {
+	tempFile, err := os.CreateTemp("", "energydata_crowded_*.json")
+	assert.NoError(t, err)
+	defer func() { _ = os.Remove(tempFile.Name()) }()
+
+	entries := []model.EnergyData{
+		{Version: 1, ZigbeeID: "id1", Date: "2025-06-04", Data: [96]float64{1, 2, 3}},
+		{Version: 1, ZigbeeID: "id2", Date: "2025-06-05", Data: [96]float64{4, 5, 6}},
+	}
+	enc := json.NewEncoder(tempFile)
+	for _, e := range entries {
+		assert.NoError(t, enc.Encode(e))
+	}
+	if err := tempFile.Close(); err != nil {
+		t.Fatalf("failed to close temp file: %v", err)
+	}
+
+	cfg := config.GetConfig()
+	cfg.Server.DataFile = tempFile.Name()
+	cfg.Server.Password = "testpwd"
+
+	srv, mux := setupEnergyTestServer(t, &planetmint.MockPlanetmintClient{}, &influxdb.MockClient{}, &database.MockDatabase{})
+	defer srv.Close()
+
+	req := httptest.NewRequest("GET", "/api/energy/download?pwd=testpwd", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	var arr []map[string]interface{}
+	assert.NoError(t, json.Unmarshal(rr.Body.Bytes(), &arr))
+	assert.Len(t, arr, 2)
+	assert.Equal(t, "id1", arr[0]["zigbee_id"])
+	assert.Equal(t, "id2", arr[1]["zigbee_id"])
+}
+
+func TestDownloadEnergyData_CorruptedFile(t *testing.T) {
+	tempFile, err := os.CreateTemp("", "energydata_corrupt_*.json")
+	assert.NoError(t, err)
+	defer func() { _ = os.Remove(tempFile.Name()) }()
+	_, err = tempFile.WriteString("not a json line\n")
+	assert.NoError(t, err)
+	if err := tempFile.Close(); err != nil {
+		t.Fatalf("failed to close temp file: %v", err)
+	}
+
+	cfg := config.GetConfig()
+	cfg.Server.DataFile = tempFile.Name()
+	cfg.Server.Password = "testpwd"
+
+	srv, mux := setupEnergyTestServer(t, &planetmint.MockPlanetmintClient{}, &influxdb.MockClient{}, &database.MockDatabase{})
+	defer srv.Close()
+
+	req := httptest.NewRequest("GET", "/api/energy/download?pwd=testpwd", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Failed to decode data file")
 }
