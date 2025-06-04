@@ -32,3 +32,13 @@ func (m *MockDatabase) GetByLiquidAddress(liquidAddress string) (map[string]Devi
 	args := m.Called(liquidAddress)
 	return args.Get(0).(map[string]Device), args.Error(1)
 }
+
+func (m *MockDatabase) SetReportStatus(zigbeeID, date, status string) error {
+	args := m.Called(zigbeeID, date, status)
+	return args.Error(0)
+}
+
+func (m *MockDatabase) GetReportStatus(zigbeeID, date string) (string, error) {
+	args := m.Called(zigbeeID, date)
+	return args.String(0), args.Error(1)
+}

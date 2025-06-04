@@ -40,6 +40,33 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	reportStatus, err := s.db.GetReportStatus(energyData.ZigbeeID, energyData.Date)
+	if err != nil {
+		log.Printf("Failed to check report status: %v", err)
+		sendJSONResponse(w, Response{Error: "Database error"}, http.StatusInternalServerError)
+		return
+	}
+	if reportStatus != "" {
+		sendJSONResponse(w, Response{Error: "report for this ZigbeeID and date already exists"}, http.StatusConflict)
+		return
+	}
+
+	status := "valid"
+	if !model.IsEnergyDataIncreasing(energyData.Data) {
+		status = "invalid"
+		log.Printf("Energy data for Zigbee ID %s is not increasing", energyData.ZigbeeID)
+	}
+
+	err = s.db.SetReportStatus(energyData.ZigbeeID, energyData.Date, status)
+	if err != nil {
+		log.Printf("Failed to store report status: %v", err)
+	}
+	if status == "invalid" {
+		log.Printf("Energy data for Zigbee ID %s is not compliant", energyData.ZigbeeID)
+		sendJSONResponse(w, Response{Error: "data set is not compliant"}, http.StatusBadRequest)
+		return
+	}
+
 	go s.writeJSON2File(energyData)
 	err = s.write2InfluxDB(energyData)
 	if err != nil {

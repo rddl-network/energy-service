@@ -3,6 +3,7 @@ package database
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -44,6 +45,11 @@ func (db *Database) Close() {
 	}
 }
 
+// keyForZigbeeID returns the LevelDB key for a given Zigbee ID
+func keyForZigbeeID(zigbeeID string) []byte {
+	return []byte("device:" + zigbeeID)
+}
+
 // AddDevice adds a new device to the database
 func (db *Database) AddDevice(zigbeeID, liquidAddress, deviceName, deviceType, planetmintAddress string) error {
 	db.mutex.Lock()
@@ -64,7 +70,7 @@ func (db *Database) AddDevice(zigbeeID, liquidAddress, deviceName, deviceType, p
 	}
 
 	// Store in LevelDB
-	err = db.db.Put([]byte(zigbeeID), data, nil)
+	err = db.db.Put(keyForZigbeeID(zigbeeID), data, nil)
 	if err != nil {
 		return fmt.Errorf("failed to store device: %v", err)
 	}
@@ -80,7 +86,7 @@ func (db *Database) GetDevice(zigbeeID string) (Device, bool, error) {
 	var device Device
 
 	// Get from LevelDB
-	data, err := db.db.Get([]byte(zigbeeID), nil)
+	data, err := db.db.Get(keyForZigbeeID(zigbeeID), nil)
 	if err == leveldb.ErrNotFound {
 		return device, false, nil
 	}
@@ -110,6 +116,10 @@ func (db *Database) GetAllDevices() (map[string]Device, error) {
 
 	for iter.Next() {
 		key := string(iter.Key())
+		if !strings.HasPrefix(key, "device:") {
+			continue
+		}
+		zigbeeID := strings.TrimPrefix(key, "device:")
 		var device Device
 
 		// Deserialize the JSON data
@@ -118,7 +128,7 @@ func (db *Database) GetAllDevices() (map[string]Device, error) {
 			return nil, fmt.Errorf("failed to unmarshal device data: %v", err)
 		}
 
-		devices[key] = device
+		devices[zigbeeID] = device
 	}
 
 	if err := iter.Error(); err != nil {
@@ -141,6 +151,10 @@ func (db *Database) GetByLiquidAddress(liquidAddress string) (map[string]Device,
 
 	for iter.Next() {
 		key := string(iter.Key())
+		if !strings.HasPrefix(key, "device:") {
+			continue
+		}
+		zigbeeID := strings.TrimPrefix(key, "device:")
 		var device Device
 
 		// Deserialize the JSON data
@@ -150,7 +164,7 @@ func (db *Database) GetByLiquidAddress(liquidAddress string) (map[string]Device,
 		}
 
 		if device.LiquidAddress == liquidAddress {
-			result[key] = device
+			result[zigbeeID] = device
 		}
 	}
 
@@ -167,15 +181,36 @@ func (db *Database) ExistsZigbeeID(zigbeeID string) (bool, error) {
 	return exists, err
 }
 
+// SetReportStatus stores the validation status ("valid" or "invalid") for a given ZigbeeID and date
+func (db *Database) SetReportStatus(zigbeeID, date, status string) error {
+	key := []byte("report:device:" + zigbeeID + ",date:" + date)
+	return db.db.Put(key, []byte(status), nil)
+}
+
+// GetReportStatus retrieves the validation status for a given ZigbeeID and date
+func (db *Database) GetReportStatus(zigbeeID, date string) (string, error) {
+	key := []byte("report:device:" + zigbeeID + ",date:" + date)
+	val, err := db.db.Get(key, nil)
+	if err == leveldb.ErrNotFound {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return string(val), nil
+}
+
 // DeviceStore abstracts device DB operations for mocking
-//go:generate mockery --name=DeviceStore
 // DeviceStore is implemented by *Database and MockDatabase
 // Used for dependency injection in server
 //
+//go:generate mockery --name=DeviceStore
 type DeviceStore interface {
 	GetDevice(zigbeeID string) (Device, bool, error)
 	AddDevice(zigbeeID, liquidAddress, deviceName, deviceType, planetmintAddress string) error
 	ExistsZigbeeID(zigbeeID string) (bool, error)
 	GetAllDevices() (map[string]Device, error)
 	GetByLiquidAddress(liquidAddress string) (map[string]Device, error)
+	SetReportStatus(zigbeeID, date, status string) error
+	GetReportStatus(zigbeeID, date string) (string, error)
 }

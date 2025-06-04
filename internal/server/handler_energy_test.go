@@ -73,13 +73,22 @@ func TestHandleEnergyData_Valid(t *testing.T) {
 	// Mock IsZigbeeRegistered to return true for "registered123"
 	plmntMock.On("IsZigbeeRegistered", "registered123").Return(true, nil)
 	influxMock.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	dbMock.On("SetReportStatus", "registered123", "2025-06-04", "valid").Return(nil)
+	dbMock.On("GetReportStatus", "registered123", "2025-06-04").Return("", nil)
+
 	_, mux := setupEnergyTestServer(t, plmntMock, influxMock, dbMock)
+
+	// Use a fully increasing array for valid test
+	var increasingData [96]float64
+	for i := 0; i < 96; i++ {
+		increasingData[i] = float64(i)
+	}
 
 	energy := model.EnergyData{
 		Version:  1,
 		ZigbeeID: "registered123",
 		Date:     "2025-06-04",
-		Data:     [96]float64{1, 2, 3},
+		Data:     increasingData,
 	}
 	body, _ := json.Marshal(energy)
 	req := httptest.NewRequest("POST", "/api/energy", bytes.NewBuffer(body))

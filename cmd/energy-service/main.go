@@ -8,9 +8,9 @@ import (
 	"github.com/planetmint/planetmint-go/app"
 	"github.com/planetmint/planetmint-go/lib"
 	"github.com/rddl-network/energy-service/internal/config"
+	"github.com/rddl-network/energy-service/internal/database"
 	"github.com/rddl-network/energy-service/internal/planetmint"
 	"github.com/rddl-network/energy-service/internal/server"
-	"github.com/rddl-network/energy-service/internal/database"
 
 	"context"
 	"time"
