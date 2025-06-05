@@ -41,18 +41,21 @@ func (u *Utils) Index2Time(index int) (int, int) {
 }
 
 // CreateTimestamp generates a timestamp from a given date, hour, and minutes
-func (u *Utils) CreateTimestamp(date string, hour, minute int) (time.Time, error) {
+func (u *Utils) CreateTimestamp(date string, hour int, minute int) (time.Time, error) {
 	// Parse the date string into a time.Time object
 	parsedDate, err := time.Parse("2006-01-02", date)
 	if err != nil {
 		return time.Now(), fmt.Errorf("invalid date format: %v", err)
 	}
-
+	day := parsedDate.Day()
+	if hour == 0 && minute == 0 {
+		day = day + 1
+	}
 	// Combine the date with the provided hour and minute
 	timestamp := time.Date(
 		parsedDate.Year(),
 		parsedDate.Month(),
-		parsedDate.Day(),
+		day,
 		hour,
 		minute,
 		0, // seconds
