@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/rddl-network/energy-service/internal/config"
 	"github.com/rddl-network/energy-service/internal/database"
@@ -50,13 +51,23 @@ func TestHandleEnergyData_UnregisteredZigbeeID(t *testing.T) {
 	dbMock := &database.MockDatabase{}
 	// Mock IsZigbeeRegistered to return false for any zigbeeID except "registered123"
 	plmntMock.On("IsZigbeeRegistered", mock.Anything).Return(false, nil)
+	dbMock.On("SetReportStatus", "unregistered123", "2025-06-04", "valid").Return(nil)
+	influxMock.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	_, mux := setupEnergyTestServer(t, plmntMock, influxMock, dbMock)
 
+	var data [96]model.EnergyTuple
+	for i := 0; i < 96; i++ {
+		data[i] = model.EnergyTuple{
+			Value:     0,
+			Timestamp: model.TimeStamp(time.Now().UTC()),
+		}
+	}
 	energy := model.EnergyData{
-		Version:  1,
-		ZigbeeID: "unregistered123",
-		Date:     "2025-06-04",
-		Data:     [96]float64{},
+		Version:      1,
+		ZigbeeID:     "unregistered123",
+		Date:         "2025-06-04",
+		TimezoneName: "Vienna/Europe",
+		Data:         data,
 	}
 	body, _ := json.Marshal(energy)
 	req := httptest.NewRequest("POST", "/api/energy", bytes.NewBuffer(body))
@@ -76,20 +87,29 @@ func TestHandleEnergyData_Valid(t *testing.T) {
 	influxMock.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	dbMock.On("SetReportStatus", "registered123", "2025-06-04", "valid").Return(nil)
 	dbMock.On("GetReportStatus", "registered123", "2025-06-04").Return("", nil)
+	influxMock.On("GetLastPoint", mock.Anything, mock.Anything, mock.Anything).Return(&influxdb.LastPointResult{
+		Fields:    map[string]interface{}{"kW/h": 0.0},
+		Tags:      map[string]string{"zigbee_id": "registered123"},
+		Timestamp: time.Now().UTC(),
+	}, nil)
 
 	_, mux := setupEnergyTestServer(t, plmntMock, influxMock, dbMock)
 
 	// Use a fully increasing array for valid test
-	var increasingData [96]float64
+	var increasingData [96]model.EnergyTuple
 	for i := 0; i < 96; i++ {
-		increasingData[i] = float64(i)
+		increasingData[i] = model.EnergyTuple{
+			Value:     float64(i),
+			Timestamp: model.TimeStamp(time.Now().UTC()),
+		}
 	}
 
 	energy := model.EnergyData{
-		Version:  1,
-		ZigbeeID: "registered123",
-		Date:     "2025-06-04",
-		Data:     increasingData,
+		Version:      1,
+		ZigbeeID:     "registered123",
+		Date:         "2025-06-04",
+		TimezoneName: "Vienna/Europe",
+		Data:         increasingData,
 	}
 	body, _ := json.Marshal(energy)
 	req := httptest.NewRequest("POST", "/api/energy", bytes.NewBuffer(body))
@@ -152,9 +172,20 @@ func TestDownloadEnergyData_CrowdedFile(t *testing.T) {
 	assert.NoError(t, err)
 	defer func() { _ = os.Remove(tempFile.Name()) }()
 
+	var data1, data2 [96]model.EnergyTuple
+	for i := 0; i < 96; i++ {
+		data1[i] = model.EnergyTuple{
+			Value:     1,
+			Timestamp: model.TimeStamp(time.Now().UTC()),
+		}
+		data2[i] = model.EnergyTuple{
+			Value:     4,
+			Timestamp: model.TimeStamp(time.Now().UTC()),
+		}
+	}
 	entries := []model.EnergyData{
-		{Version: 1, ZigbeeID: "id1", Date: "2025-06-04", Data: [96]float64{1, 2, 3}},
-		{Version: 1, ZigbeeID: "id2", Date: "2025-06-05", Data: [96]float64{4, 5, 6}},
+		{Version: 1, ZigbeeID: "id1", Date: "2025-06-04", TimezoneName: "Vienna/Europe", Data: data1},
+		{Version: 1, ZigbeeID: "id2", Date: "2025-06-05", TimezoneName: "Vienna/Europe", Data: data2},
 	}
 	enc := json.NewEncoder(tempFile)
 	for _, e := range entries {
@@ -204,4 +235,154 @@ func TestDownloadEnergyData_CorruptedFile(t *testing.T) {
 	mux.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 	assert.Contains(t, rr.Body.String(), "Failed to decode data file")
+}
+
+func TestHandleEnergyData_IncrementalVsLastPoint(t *testing.T) {
+	plmntMock := &planetmint.MockPlanetmintClient{}
+	influxMock := &influxdb.MockClient{}
+	dbMock := &database.MockDatabase{}
+	plmntMock.On("IsZigbeeRegistered", "zigbeeInc").Return(true, nil)
+	dbMock.On("SetReportStatus", "zigbeeInc", "2025-06-04", "valid").Return(nil)
+	dbMock.On("GetReportStatus", "zigbeeInc", "2025-06-04").Return("", nil)
+	influxMock.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	influxMock.On("GetLastPoint", mock.Anything, mock.Anything, mock.Anything).Return(&influxdb.LastPointResult{
+		Fields:    map[string]interface{}{"kW/h": 10.0},
+		Tags:      map[string]string{"zigbee_id": "zigbeeInc"},
+		Timestamp: time.Now().UTC(),
+	}, nil)
+
+	_, mux := setupEnergyTestServer(t, plmntMock, influxMock, dbMock)
+	var data [96]model.EnergyTuple
+	for i := 0; i < 96; i++ {
+		data[i] = model.EnergyTuple{
+			Value:     10.0 + float64(i+1), // strictly increasing
+			Timestamp: model.TimeStamp(time.Now().UTC()),
+		}
+	}
+	energy := model.EnergyData{
+		Version:      1,
+		ZigbeeID:     "zigbeeInc",
+		Date:         "2025-06-04",
+		TimezoneName: "Vienna/Europe",
+		Data:         data,
+	}
+	body, _ := json.Marshal(energy)
+	req := httptest.NewRequest("POST", "/api/energy", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Energy data received and written to database successfully")
+}
+
+func TestHandleEnergyData_EqualVsLastPoint(t *testing.T) {
+	plmntMock := &planetmint.MockPlanetmintClient{}
+	influxMock := &influxdb.MockClient{}
+	dbMock := &database.MockDatabase{}
+	plmntMock.On("IsZigbeeRegistered", "zigbeeEq").Return(true, nil)
+	dbMock.On("SetReportStatus", "zigbeeEq", "2025-06-04", "valid").Return(nil)
+	dbMock.On("GetReportStatus", "zigbeeEq", "2025-06-04").Return("", nil)
+	influxMock.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	influxMock.On("GetLastPoint", mock.Anything, mock.Anything, mock.Anything).Return(&influxdb.LastPointResult{
+		Fields:    map[string]interface{}{"kW/h": 10.0},
+		Tags:      map[string]string{"zigbee_id": "zigbeeEq"},
+		Timestamp: time.Now().UTC(),
+	}, nil)
+
+	_, mux := setupEnergyTestServer(t, plmntMock, influxMock, dbMock)
+	var data [96]model.EnergyTuple
+	for i := 0; i < 96; i++ {
+		data[i] = model.EnergyTuple{
+			Value:     10.0, // equal to last point
+			Timestamp: model.TimeStamp(time.Now().UTC()),
+		}
+	}
+	energy := model.EnergyData{
+		Version:      1,
+		ZigbeeID:     "zigbeeEq",
+		Date:         "2025-06-04",
+		TimezoneName: "Vienna/Europe",
+		Data:         data,
+	}
+	body, _ := json.Marshal(energy)
+	req := httptest.NewRequest("POST", "/api/energy", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	// Expect error or rejection (status code depends on your handler logic)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Energy data received and written to database successfull")
+}
+
+func TestHandleEnergyData_EqualVsLastPoint_no_previous_data(t *testing.T) {
+	plmntMock := &planetmint.MockPlanetmintClient{}
+	influxMock := &influxdb.MockClient{}
+	dbMock := &database.MockDatabase{}
+	plmntMock.On("IsZigbeeRegistered", "zigbeeEq").Return(true, nil)
+	dbMock.On("SetReportStatus", "zigbeeEq", "2025-06-04", "valid").Return(nil)
+	dbMock.On("GetReportStatus", "zigbeeEq", "2025-06-04").Return("", nil)
+	influxMock.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	influxMock.On("GetLastPoint", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
+
+	_, mux := setupEnergyTestServer(t, plmntMock, influxMock, dbMock)
+	var data [96]model.EnergyTuple
+	for i := 0; i < 96; i++ {
+		data[i] = model.EnergyTuple{
+			Value:     10.0, // equal to last point
+			Timestamp: model.TimeStamp(time.Now().UTC()),
+		}
+	}
+	energy := model.EnergyData{
+		Version:      1,
+		ZigbeeID:     "zigbeeEq",
+		Date:         "2025-06-04",
+		TimezoneName: "Vienna/Europe",
+		Data:         data,
+	}
+	body, _ := json.Marshal(energy)
+	req := httptest.NewRequest("POST", "/api/energy", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	// Expect error or rejection (status code depends on your handler logic)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Energy data received and written to database successfull")
+}
+
+func TestHandleEnergyData_LowerVsLastPoint(t *testing.T) {
+	plmntMock := &planetmint.MockPlanetmintClient{}
+	influxMock := &influxdb.MockClient{}
+	dbMock := &database.MockDatabase{}
+	plmntMock.On("IsZigbeeRegistered", "zigbeeLow").Return(true, nil)
+	dbMock.On("SetReportStatus", "zigbeeLow", "2025-06-04", "valid").Return(nil)
+	dbMock.On("GetReportStatus", "zigbeeLow", "2025-06-04").Return("", nil)
+	influxMock.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	influxMock.On("GetLastPoint", mock.Anything, mock.Anything, mock.Anything).Return(&influxdb.LastPointResult{
+		Fields:    map[string]interface{}{"kW/h": 10.0},
+		Tags:      map[string]string{"zigbee_id": "zigbeeLow"},
+		Timestamp: time.Now().UTC(),
+	}, nil)
+
+	_, mux := setupEnergyTestServer(t, plmntMock, influxMock, dbMock)
+	var data [96]model.EnergyTuple
+	for i := 0; i < 96; i++ {
+		data[i] = model.EnergyTuple{
+			Value:     9.0, // lower than last point
+			Timestamp: model.TimeStamp(time.Now().UTC()),
+		}
+	}
+	energy := model.EnergyData{
+		Version:      1,
+		ZigbeeID:     "zigbeeLow",
+		Date:         "2025-06-04",
+		TimezoneName: "Vienna/Europe",
+		Data:         data,
+	}
+	body, _ := json.Marshal(energy)
+	req := httptest.NewRequest("POST", "/api/energy", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.NotEqual(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Incompatible data: data does not increase")
 }

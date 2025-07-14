@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -25,8 +26,6 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Received energy data: %+v", energyData)
-
 	existsPlmnt, err := s.plmntClient.IsZigbeeRegistered(energyData.ZigbeeID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
@@ -50,6 +49,25 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 	}
 	if reportStatus != "" {
 		sendJSONResponse(w, Response{Error: "report for this ZigbeeID and date already exists"}, http.StatusConflict)
+		return
+	}
+
+	// get first data element from payload
+	// compare it against the last registered datapoint of this reporting device
+	lastPoints, err := s.influxDBClient.GetLastPoint(context.Background(),
+		"energy_data",
+		map[string]string{
+			"Inspelning": energyData.ZigbeeID,
+			"timezone":   energyData.TimezoneName,
+		})
+	if err != nil {
+		log.Printf("Failed to get last point from InfluxDB: %v", err)
+		sendJSONResponse(w, Response{Error: "Failed to retrieve last point from database"}, http.StatusInternalServerError)
+		return
+	}
+	// check if data is equal or increased
+	if lastPoints != nil && energyData.Data[0].Value < lastPoints.Fields["kW/h"].(float64) {
+		sendJSONResponse(w, Response{Error: "Incompatible data: data does not increase."}, http.StatusConflict)
 		return
 	}
 

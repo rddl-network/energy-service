@@ -19,7 +19,6 @@ func main() {
 	var dataStr string
 
 	utcTime := time.Now().UTC()
-	// Format as YYYY-MM-DD (same format you're using in your JSON)
 	currentDate := utcTime.Format("2006-01-02")
 	defaultData := ""
 	// Define CLI flags
@@ -29,6 +28,7 @@ func main() {
 	zigbeeID := flag.String("zigbee_id", "", "Zigbee ID to include in the JSON payload")
 	production := flag.Bool("production", false, "Use for production purposes")
 	date := flag.String("date", currentDate, "Date in YYYY-MM-DD format")
+	tzName := flag.String("timezone", "", "Timezone name (e.g., Europe/Vienna). If empty, uses system timezone or UTC.")
 	flag.StringVar(&dataStr, "data", defaultData, "96 float value to be sent in the JSON payload")
 
 	flag.Parse()
@@ -38,6 +38,17 @@ func main() {
 		fmt.Println("Error: zigbee_id is required")
 		flag.Usage()
 		os.Exit(1)
+	}
+
+	// Determine timezone name
+	tz := *tzName
+	if tz == "" {
+		loc, err := time.LoadLocation("")
+		if err == nil && loc.String() != "Local" {
+			tz = loc.String()
+		} else {
+			tz = "UTC"
+		}
 	}
 
 	strValues := strings.Fields(dataStr)
@@ -68,18 +79,25 @@ func main() {
 		}
 	}
 
-	// Convert slice to array
-	var dataArray [96]float64
+	// Prepare data array of objects with value and timestamp
+	var dataArray [96]map[string]interface{}
+	baseTime, _ := time.ParseInLocation("2006-01-02", *date, time.UTC)
 	for i := 0; i < 96; i++ {
+		var val float64
 		if generateRandomData {
-			dataArray[i] = float64(i) + rand.Float64()
 			if i == 0 {
-				dataArray[i] = rand.Float64()
+				val = rand.Float64()
 			} else {
-				dataArray[i] = dataArray[i-1] + rand.Float64()
+				val = dataArray[i-1]["value"].(float64) + rand.Float64()
 			}
 		} else {
-			dataArray[i] = dataSlice[i]
+			val = dataSlice[i]
+		}
+		// Each 15 minutes
+		ts := baseTime.Add(time.Duration(i*15) * time.Minute).UTC().Format("2006-01-02 15:04:05")
+		dataArray[i] = map[string]interface{}{
+			"value":     val,
+			"timestamp": ts,
 		}
 	}
 
@@ -88,14 +106,12 @@ func main() {
 
 	// Create the JSON payload
 	payload := map[string]interface{}{
-		"version":   1,
-		"zigbee_id": *zigbeeID,
-		"date":      *date, // Define the date
-		"data":      [96]float64{},
+		"version":       1,
+		"zigbee_id":     *zigbeeID,
+		"date":          *date,
+		"timezone_name": tz,
+		"data":          dataArray,
 	}
-
-	// Reassign the modified array back to the payload
-	payload["data"] = dataArray
 
 	jsonData, err := json.Marshal(payload)
 	if err != nil {

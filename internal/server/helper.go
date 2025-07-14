@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/rddl-network/energy-service/internal/config"
 	"github.com/rddl-network/energy-service/internal/model"
@@ -31,25 +32,22 @@ func (s *Server) writeJSON2File(data model.EnergyData) {
 }
 
 func (s *Server) write2InfluxDB(data model.EnergyData) error {
-	writeAPI := s.influxWriteAPI
+	writeAPI := s.influxDBClient
 	if writeAPI == nil {
 		log.Printf("No InfluxDB write API set")
 		return nil
 	}
 
 	for i := 0; i < 96; i++ {
-		hour, minutes := s.utils.Index2Time(i)
-		ts, err := s.utils.CreateTimestamp(data.Date, hour, minutes)
-		if err != nil {
-			log.Printf("Error creating timestamp: %v", err)
-			continue
-		}
-		err = writeAPI.WritePoint(
+		err := writeAPI.WritePoint(
 			context.Background(),
 			"energy_data",
-			map[string]string{"zigbee_id": data.ZigbeeID},
-			map[string]interface{}{"kW/h": data.Data[i]},
-			ts,
+			map[string]string{
+				"Inspelning": data.ZigbeeID,
+				"timezone":   data.TimezoneName,
+			},
+			map[string]interface{}{"kW/h": data.Data[i].Value},
+			time.Time(data.Data[i].Timestamp),
 		)
 		if err != nil {
 			log.Printf("Failed to write to InfluxDB: %v", err)

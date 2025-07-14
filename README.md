@@ -82,6 +82,37 @@ curl -X POST http://localhost:8080/register \
 curl http://localhost:8080/api/devices
 ```
 
+#### /api/energy
+- **Method:** POST
+- **Request Body:** JSON object with the following fields:
+  - `version` (int, required): Version of the payload format
+  - `zigbee_id` (string, required): Unique Zigbee ID for the device
+  - `date` (string, required): Date for the energy data (YYYY-MM-DD)
+  - `timezone_name` (string, required): Name of the timezone (e.g., "Europe/Vienna")
+  - `data` (array of 96 objects, required): Each object is:
+    - `value` (float): The energy value
+    - `timestamp` (string): UTC timestamp in the format `YYYY-MM-DD HH:MM:SS`
+- **Response:**
+  - On success: `{ "message": "Energy data received and written to database successfully" }`
+  - On error: `{ "error": "..." }` with appropriate HTTP status code (e.g., 400 for validation errors, 409 for duplicate, 500 for server error)
+
+**Example:**
+```json
+{
+  "version": 1,
+  "zigbee_id": "12345",
+  "date": "2025-06-04",
+  "timezone_name": "Europe/Vienna",
+  "data": [
+    { "value": 1.23, "timestamp": "2025-06-04 00:00:00" },
+    { "value": 1.24, "timestamp": "2025-06-04 00:15:00" },
+    ... (total 96 entries) ...
+  ]
+}
+```
+
+**Note:** The `data` array must contain exactly 96 entries, each with a value and a UTC timestamp string in the specified format.
+
 #### /api/energy/download
 - **Method:** GET
 - **Query Parameter:** `pwd` (required, must match the configured server password)
