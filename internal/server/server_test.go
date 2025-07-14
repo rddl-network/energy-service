@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/rddl-network/energy-service/internal/config"
 	"github.com/rddl-network/energy-service/internal/database"
@@ -34,6 +35,11 @@ func TestHandleEnergyData(t *testing.T) {
 	dbMock.On("SetReportStatus", "12345", "2025-05-14", "invalid").Return(nil)
 	// Add mock expectation for GetReportStatus (no report exists yet)
 	dbMock.On("GetReportStatus", "12345", "2025-05-14").Return("", nil)
+	influxMock.On("GetLastPoint", mock.Anything, mock.Anything, mock.Anything).Return(&influxdb.LastPointResult{
+		Fields:    map[string]interface{}{"kW/h": 0.0},
+		Tags:      map[string]string{"zigbee_id": "12345"},
+		Timestamp: time.Now().UTC(),
+	}, nil)
 
 	srv, err := server.NewServer(plmntMock, influxMock, dbMock)
 	if err != nil {
@@ -45,11 +51,19 @@ func TestHandleEnergyData(t *testing.T) {
 	srv.Routes(mux)
 
 	// Create a sample energy data payload
+	var data [96]model.EnergyTuple
+	for i := 0; i < 10; i++ {
+		data[i] = model.EnergyTuple{
+			Value:     float64(i + 1),
+			Timestamp: model.TimeStamp(time.Now().UTC()), // Use a fixed or test value if needed
+		}
+	}
 	payload := model.EnergyData{
-		Version:  1,
-		ZigbeeID: "12345",
-		Date:     "2025-05-14",
-		Data:     [96]float64{1, 2, 3, 4, 5},
+		Version:      1,
+		ZigbeeID:     "12345",
+		Date:         "2025-05-14",
+		TimezoneName: "Vienna/Europe",
+		Data:         data,
 	}
 
 	// Marshal the payload to JSON
@@ -92,7 +106,11 @@ func TestHandleEnergyData_ValidIncreasing(t *testing.T) {
 	plmntMock.On("IsZigbeeRegistered", "incrid").Return(true, nil)
 	dbMock.On("SetReportStatus", "incrid", "2025-06-04", "valid").Return(nil)
 	dbMock.On("GetReportStatus", "incrid", "2025-06-04").Return("", nil)
-
+	influxMock.On("GetLastPoint", mock.Anything, mock.Anything, mock.Anything).Return(&influxdb.LastPointResult{
+		Fields:    map[string]interface{}{"kW/h": 0.0},
+		Tags:      map[string]string{"zigbee_id": "incrid"},
+		Timestamp: time.Now().UTC(),
+	}, nil)
 	srv, err := server.NewServer(plmntMock, influxMock, dbMock)
 	if err != nil {
 		t.Fatalf("Failed to create server: %v", err)
@@ -102,15 +120,19 @@ func TestHandleEnergyData_ValidIncreasing(t *testing.T) {
 	mux := http.NewServeMux()
 	srv.Routes(mux)
 
-	var increasing [96]float64
+	var increasing [96]model.EnergyTuple
 	for i := 0; i < 96; i++ {
-		increasing[i] = float64(i)
+		increasing[i] = model.EnergyTuple{
+			Value:     float64(i),
+			Timestamp: model.TimeStamp(time.Now().UTC()),
+		}
 	}
 	payload := model.EnergyData{
-		Version:  1,
-		ZigbeeID: "incrid",
-		Date:     "2025-06-04",
-		Data:     increasing,
+		Version:      1,
+		ZigbeeID:     "incrid",
+		Date:         "2025-06-04",
+		TimezoneName: "Vienna/Europe",
+		Data:         increasing,
 	}
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
@@ -144,6 +166,11 @@ func TestHandleEnergyData_AlreadyExists(t *testing.T) {
 	influxMock.On("Close").Return()
 	plmntMock.On("IsZigbeeRegistered", "dupeid").Return(true, nil)
 	dbMock.On("GetReportStatus", "dupeid", "2025-06-05").Return("valid", nil)
+	influxMock.On("GetLastPoint", mock.Anything, mock.Anything, mock.Anything).Return(&influxdb.LastPointResult{
+		Fields:    map[string]interface{}{"kW/h": 0.0},
+		Tags:      map[string]string{"zigbee_id": "dupeid"},
+		Timestamp: time.Now().UTC(),
+	}, nil)
 
 	srv, err := server.NewServer(plmntMock, influxMock, dbMock)
 	if err != nil {
@@ -154,15 +181,19 @@ func TestHandleEnergyData_AlreadyExists(t *testing.T) {
 	mux := http.NewServeMux()
 	srv.Routes(mux)
 
-	var increasing [96]float64
+	var increasing [96]model.EnergyTuple
 	for i := 0; i < 96; i++ {
-		increasing[i] = float64(i)
+		increasing[i] = model.EnergyTuple{
+			Value:     float64(i),
+			Timestamp: model.TimeStamp(time.Now().UTC()),
+		}
 	}
 	payload := model.EnergyData{
-		Version:  1,
-		ZigbeeID: "dupeid",
-		Date:     "2025-06-05",
-		Data:     increasing,
+		Version:      1,
+		ZigbeeID:     "dupeid",
+		Date:         "2025-06-05",
+		TimezoneName: "Vienna/Europe",
+		Data:         increasing,
 	}
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {

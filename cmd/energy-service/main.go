@@ -9,29 +9,16 @@ import (
 	"github.com/planetmint/planetmint-go/lib"
 	"github.com/rddl-network/energy-service/internal/config"
 	"github.com/rddl-network/energy-service/internal/database"
+	"github.com/rddl-network/energy-service/internal/influxdb"
 	"github.com/rddl-network/energy-service/internal/planetmint"
 	"github.com/rddl-network/energy-service/internal/server"
 
-	"context"
-	"time"
-
 	influxdb2 "github.com/influxdata/influxdb-client-go"
-	"github.com/influxdata/influxdb-client-go/api"
-	"github.com/influxdata/influxdb-client-go/api/write"
 
+	"context"
 	_ "embed"
 	"os"
 )
-
-// Adapter to match the server's expected WritePoint interface
-type InfluxWriteAPIAdapter struct {
-	api api.WriteAPIBlocking
-}
-
-func (a *InfluxWriteAPIAdapter) WritePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts interface{}) error {
-	p := write.NewPoint(measurement, tags, fields, ts.(time.Time))
-	return a.api.WritePoint(ctx, p)
-}
 
 //go:embed static/rddl-sidepane.png
 var rddlSidepanePNG []byte
@@ -85,8 +72,7 @@ func main() {
 	log.Printf("InfluxDB URL: %s", cfg.InfluxDB.URL)
 	client := influxdb2.NewClient(cfg.InfluxDB.URL, cfg.InfluxDB.Token)
 	defer client.Close() // Ensure client is closed properly
-	writeAPI := client.WriteAPIBlocking(cfg.InfluxDB.Org, cfg.InfluxDB.Bucket)
-	adapter := &InfluxWriteAPIAdapter{api: writeAPI}
+	influxClient := influxdb.NewLocalInfluxClient(client, cfg.InfluxDB.Org, cfg.InfluxDB.Bucket)
 
 	libConfig.SetChainID(cfg.Planetmint.ChainID)
 	grpcConn, err := planetmint.SetupGRPCConnection(cfg)
@@ -100,7 +86,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
-	srv, err := server.NewServer(plmntClient, adapter, db)
+	srv, err := server.NewServer(plmntClient, influxClient, db)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
 	}
@@ -108,6 +94,23 @@ func main() {
 
 	mux := http.NewServeMux()
 	srv.Routes(mux)
+
+	// Connectivity check: simple test query to verify bucket/org
+	// Simple test query: list measurements in the bucket
+	testQuery := `import "influxdata/influxdb/schema"
+schema.measurements(bucket: "` + cfg.InfluxDB.Bucket + `")`
+	queryAPI := client.QueryAPI(cfg.InfluxDB.Org)
+	result, err := queryAPI.Query(context.Background(), testQuery)
+	if err != nil {
+		log.Fatalf("InfluxDB test query failed: %v", err)
+	}
+	log.Println("InfluxDB connectivity and test query succeeded. Measurements:")
+	for result.Next() {
+		log.Println(result.Record().Value())
+	}
+	if result.Err() != nil {
+		log.Fatalf("InfluxDB test query result error: %v", result.Err())
+	}
 
 	// Start the server
 	log.Println("Server starting on http://localhost:" + strconv.Itoa(cfg.Server.Port))

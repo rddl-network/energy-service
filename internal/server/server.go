@@ -1,13 +1,13 @@
 package server
 
 import (
-	"context"
 	"html/template"
 	"log"
 	"net/http"
 	"sync"
 
 	"github.com/rddl-network/energy-service/internal/database"
+	"github.com/rddl-network/energy-service/internal/influxdb"
 	service "github.com/rddl-network/energy-service/internal/planetmint"
 	"github.com/rddl-network/energy-service/internal/utils"
 )
@@ -24,24 +24,20 @@ type Server struct {
 	db                  database.DeviceStore
 	utils               *utils.Utils
 	energyDataFileMutex sync.Mutex
-	influxWriteAPI      interface {
-		WritePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts interface{}) error
-	}
-	plmntClient service.IPlanetmintClient
+	influxDBClient      influxdb.Client
+	plmntClient         service.IPlanetmintClient
 }
 
 // NewServer creates a new server instance, now accepts influxWriteAPI and DeviceStore
 func NewServer(
 	plmntClient service.IPlanetmintClient,
-	writeAPI interface {
-		WritePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts interface{}) error
-	},
+	idbClient influxdb.Client,
 	db database.DeviceStore, // <-- new param
 ) (*Server, error) {
 	return &Server{
 		db:             db,
 		utils:          &utils.Utils{},
-		influxWriteAPI: writeAPI,
+		influxDBClient: idbClient,
 		plmntClient:    plmntClient,
 	}, nil
 }
@@ -49,9 +45,7 @@ func NewServer(
 // NewDefaultServer creates a new server with a real database (for production)
 func NewDefaultServer(
 	plmntClient service.IPlanetmintClient,
-	writeAPI interface {
-		WritePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts interface{}) error
-	},
+	dbClient influxdb.Client,
 ) (*Server, error) {
 	db, err := database.NewDatabase()
 	if err != nil {
@@ -60,7 +54,7 @@ func NewDefaultServer(
 	return &Server{
 		db:             db,
 		utils:          &utils.Utils{},
-		influxWriteAPI: writeAPI,
+		influxDBClient: dbClient,
 		plmntClient:    plmntClient,
 	}, nil
 }
