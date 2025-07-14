@@ -66,7 +66,7 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// check if data is equal or increased
-	if energyData.Data[0].Value < lastPoints.Fields["kW/h"].(float64) {
+	if lastPoints != nil && energyData.Data[0].Value < lastPoints.Fields["kW/h"].(float64) {
 		sendJSONResponse(w, Response{Error: "Incompatible data: data does not increase."}, http.StatusConflict)
 		return
 	}
