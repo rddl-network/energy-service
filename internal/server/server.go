@@ -77,6 +77,7 @@ func (s *Server) Routes(mux *http.ServeMux) {
 
 	// API endpoints
 	mux.HandleFunc("/register", s.handleRegister)
+	mux.HandleFunc("/api/device", s.HandleIsDeviceRegistered)
 	mux.HandleFunc("/api/devices", s.handleGetDevices)
 	mux.HandleFunc("/api/energy", s.handleEnergyData)
 	mux.HandleFunc("/api/energy/download", s.handleDownloadEnergyData)
