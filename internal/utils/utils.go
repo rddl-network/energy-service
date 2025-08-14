@@ -9,12 +9,11 @@ import (
 // Utils provides utility functions
 type Utils struct{}
 
-// IsValidZigbeeID validates Zigbee ID format
-func (u *Utils) IsValidZigbeeID(id string) bool {
-	// Zigbee IDs: 16 hex or UUID with optional _N suffix
-	zigbee16 := regexp.MustCompile(`^[0-9A-Fa-f]{16}$`)
-	uuidPattern := regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?:_\d+)?$`)
-	return zigbee16.MatchString(id) || uuidPattern.MatchString(id)
+// IsValidID validates for valid SHA256 hash
+func (u *Utils) IsValidID(id string) bool {
+	// Valid IDs: valid SHA256 hash
+	sha256Pattern := regexp.MustCompile(`^[0-9a-fA-F]{64}$`)
+	return sha256Pattern.MatchString(id)
 }
 
 // MapEnergyDataToTime maps a 96-float array to a two-dimensional array with corresponding daytime

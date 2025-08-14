@@ -84,7 +84,7 @@ func TestRegister_InvalidZigbeeIDFormat(t *testing.T) {
 func TestRegister_DBError(t *testing.T) {
 	plmntMock := &planetmint.MockPlanetmintClient{}
 	dbMock := &database.MockDatabase{}
-	validZigbeeID := "1234567890123456"
+	validZigbeeID := "bb0773daa6dc31d6accf9c1b1086a174a33417ac924f51813cf702e344d9ffa6"
 	form := map[string]interface{}{
 		"zigbee_id":          validZigbeeID,
 		"liquid_address":     "liq1",
@@ -107,7 +107,7 @@ func TestRegister_DBError(t *testing.T) {
 func TestRegister_AlreadyExists(t *testing.T) {
 	plmntMock := &planetmint.MockPlanetmintClient{}
 	dbMock := &database.MockDatabase{}
-	validZigbeeID := "1234567890123456"
+	validZigbeeID := "bb0773daa6dc31d6accf9c1b1086a174a33417ac924f51813cf702e344d9ffa6"
 	form := map[string]interface{}{
 		"zigbee_id":          validZigbeeID,
 		"liquid_address":     "liq1",
@@ -130,7 +130,7 @@ func TestRegister_AlreadyExists(t *testing.T) {
 func TestRegister_PlanetmintError(t *testing.T) {
 	plmntMock := &planetmint.MockPlanetmintClient{}
 	dbMock := &database.MockDatabase{}
-	validZigbeeID := "1234567890123456"
+	validZigbeeID := "bb0773daa6dc31d6accf9c1b1086a174a33417ac924f51813cf702e344d9ffa6"
 	dbMock.On("GetDevice", validZigbeeID).Return(database.Device{}, false, nil)
 	plmntMock.On("IsZigbeeRegistered", validZigbeeID).Return(false, assert.AnError)
 	_, mux := setupRegisterTestServer(t, plmntMock, dbMock)
@@ -153,7 +153,7 @@ func TestRegister_PlanetmintError(t *testing.T) {
 func TestRegister_Success(t *testing.T) {
 	plmntMock := &planetmint.MockPlanetmintClient{}
 	dbMock := &database.MockDatabase{}
-	validZigbeeID := "1234567890123456"
+	validZigbeeID := "bb0773daa6dc31d6accf9c1b1086a174a33417ac924f51813cf702e344d9ffa6"
 	dbMock.On("GetDevice", validZigbeeID).Return(database.Device{}, false, nil)
 	dbMock.On("AddDevice", validZigbeeID, "liq1", "dev1", "type1", "plmnt1").Return(nil)
 	plmntMock.On("IsZigbeeRegistered", validZigbeeID).Return(false, nil)

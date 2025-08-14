@@ -44,7 +44,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate Zigbee ID format
-	if !s.utils.IsValidZigbeeID(zigbeeID) {
+	if !s.utils.IsValidID(zigbeeID) {
 		sendJSONResponse(w, Response{Error: "Invalid Zigbee ID format"}, http.StatusBadRequest)
 		return
 	}
