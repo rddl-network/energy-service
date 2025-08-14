@@ -45,6 +45,7 @@ The `energy-service` is a server application that handles device registration an
 - `GET /api/devices`: Retrieve all registered devices as a JSON array.
 - `POST /api/energy`: Upload energy data (JSON payload, see client for format).
 - `GET /api/energy/download?pwd=YOUR_PASSWORD`: Download all stored energy data as a JSON array. **Password-protected.**
+- `GET /api/device/{zigbee_id}`: Check if a device is registered.
 
 #### /register
 - **Method:** POST
@@ -128,6 +129,28 @@ curl "http://localhost:8080/api/energy/download?pwd=YOUR_PASSWORD"
 ```
 
 **Note:** The download endpoint streams all valid JSON entries from the server's data file. Each entry matches the format uploaded via `/api/energy`.
+
+#### /api/device/{zigbee_id}
+- **Method:** GET
+- **Path Parameter:** `zigbee_id` (required) — The Zigbee ID of the device to check.
+- **Response:**
+  - If the device is registered: `{ "registered": true }`
+  - If the device is not found: `{ "error": "Device not found" }` (HTTP 404)
+  - If the device ID is missing or the path is invalid: `{ "error": "Missing device ID" }` or `{ "error": "Invalid device ID" }` (HTTP 400)
+
+**Example:**
+```bash
+curl http://localhost:8080/api/device/12345
+```
+**Response:**
+```json
+{ "registered": true }
+```
+
+**Notes:**
+- The endpoint expects the device ID as part of the URL path (e.g., `/api/device/12345`).
+- If the device is not found, the response will indicate an error and return HTTP 404.
+- If the path is malformed (e.g., `/api/device/` or `/api/device/12345/extra`), the response will indicate an error and return HTTP 400.
 
 ### Usage
 Run the `energy-service` with the following command:
