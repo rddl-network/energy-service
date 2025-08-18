@@ -37,7 +37,7 @@ func TestHandleEnergyData(t *testing.T) {
 	dbMock.On("GetReportStatus", "12345", "2025-05-14").Return("", nil)
 	influxMock.On("GetLastPoint", mock.Anything, mock.Anything, mock.Anything).Return(&influxdb.LastPointResult{
 		Fields:    map[string]interface{}{"kW/h": 0.0},
-		Tags:      map[string]string{"zigbee_id": "12345"},
+		Tags:      map[string]string{"id": "12345"},
 		Timestamp: time.Now().UTC(),
 	}, nil)
 
@@ -60,7 +60,7 @@ func TestHandleEnergyData(t *testing.T) {
 	}
 	payload := model.EnergyData{
 		Version:      1,
-		ZigbeeID:     "12345",
+		ID:           "12345",
 		Date:         "2025-05-14",
 		TimezoneName: "Vienna/Europe",
 		Data:         data,
@@ -108,7 +108,7 @@ func TestHandleEnergyData_ValidIncreasing(t *testing.T) {
 	dbMock.On("GetReportStatus", "incrid", "2025-06-04").Return("", nil)
 	influxMock.On("GetLastPoint", mock.Anything, mock.Anything, mock.Anything).Return(&influxdb.LastPointResult{
 		Fields:    map[string]interface{}{"kW/h": 0.0},
-		Tags:      map[string]string{"zigbee_id": "incrid"},
+		Tags:      map[string]string{"id": "incrid"},
 		Timestamp: time.Now().UTC(),
 	}, nil)
 	srv, err := server.NewServer(plmntMock, influxMock, dbMock)
@@ -129,7 +129,7 @@ func TestHandleEnergyData_ValidIncreasing(t *testing.T) {
 	}
 	payload := model.EnergyData{
 		Version:      1,
-		ZigbeeID:     "incrid",
+		ID:           "incrid",
 		Date:         "2025-06-04",
 		TimezoneName: "Vienna/Europe",
 		Data:         increasing,
@@ -168,7 +168,7 @@ func TestHandleEnergyData_AlreadyExists(t *testing.T) {
 	dbMock.On("GetReportStatus", "dupeid", "2025-06-05").Return("valid", nil)
 	influxMock.On("GetLastPoint", mock.Anything, mock.Anything, mock.Anything).Return(&influxdb.LastPointResult{
 		Fields:    map[string]interface{}{"kW/h": 0.0},
-		Tags:      map[string]string{"zigbee_id": "dupeid"},
+		Tags:      map[string]string{"id": "dupeid"},
 		Timestamp: time.Now().UTC(),
 	}, nil)
 
@@ -190,7 +190,7 @@ func TestHandleEnergyData_AlreadyExists(t *testing.T) {
 	}
 	payload := model.EnergyData{
 		Version:      1,
-		ZigbeeID:     "dupeid",
+		ID:           "dupeid",
 		Date:         "2025-06-05",
 		TimezoneName: "Vienna/Europe",
 		Data:         increasing,

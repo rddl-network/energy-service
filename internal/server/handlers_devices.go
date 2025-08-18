@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/rddl-network/energy-service/internal/config"
 )
@@ -36,6 +37,40 @@ func (s *Server) handleGetDevices(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(devices)
 	if err != nil {
 		sendJSONResponse(w, Response{Error: "Failed to encode devices"}, http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *Server) HandleIsDeviceRegistered(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract device ID from URL path
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) < 4 || parts[3] == "" {
+		sendJSONResponse(w, Response{Error: "Missing device ID"}, http.StatusBadRequest)
+		return
+	}
+	if len(parts) > 4 {
+		sendJSONResponse(w, Response{Error: "Invalid device ID"}, http.StatusBadRequest)
+		return
+	}
+
+	deviceID := parts[3]
+
+	devices, found, err := s.db.GetDevice(deviceID)
+	if err != nil || !found {
+		sendJSONResponse(w, Response{Error: "Device not found"}, http.StatusNotFound)
+		return
+	}
+
+	// Optionally, you could transform the map to a slice if you want to control the order or add extra fields
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(devices)
+	if err != nil {
+		sendJSONResponse(w, Response{Error: "Failed to encode device"}, http.StatusNotFound)
 		return
 	}
 }

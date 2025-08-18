@@ -26,7 +26,7 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	existsPlmnt, err := s.plmntClient.IsZigbeeRegistered(energyData.ZigbeeID)
+	existsPlmnt, err := s.plmntClient.IsZigbeeRegistered(energyData.ID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			sendJSONResponse(w, Response{Error: "Inspelning not found"}, http.StatusBadRequest)
@@ -36,12 +36,12 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if !existsPlmnt {
-		log.Printf("Zigbee ID %s not registered in Planetmint", energyData.ZigbeeID)
+		log.Printf("Zigbee ID %s not registered in Planetmint", energyData.ID)
 		sendJSONResponse(w, Response{Error: "Inspelning not registered in Planetmint"}, http.StatusBadRequest)
 		return
 	}
 
-	reportStatus, err := s.db.GetReportStatus(energyData.ZigbeeID, energyData.Date)
+	reportStatus, err := s.db.GetReportStatus(energyData.ID, energyData.Date)
 	if err != nil {
 		log.Printf("Failed to check report status: %v", err)
 		sendJSONResponse(w, Response{Error: "Database error"}, http.StatusInternalServerError)
@@ -57,7 +57,7 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 	lastPoints, err := s.influxDBClient.GetLastPoint(context.Background(),
 		"energy_data",
 		map[string]string{
-			"Inspelning": energyData.ZigbeeID,
+			"Inspelning": energyData.ID,
 			"timezone":   energyData.TimezoneName,
 		})
 	if err != nil {
@@ -74,15 +74,15 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 	status := "valid"
 	if !model.IsEnergyDataIncreasing(energyData.Data) {
 		status = "invalid"
-		log.Printf("Energy data for Zigbee ID %s is not increasing", energyData.ZigbeeID)
+		log.Printf("Energy data for Zigbee ID %s is not increasing", energyData.ID)
 	}
 
-	err = s.db.SetReportStatus(energyData.ZigbeeID, energyData.Date, status)
+	err = s.db.SetReportStatus(energyData.ID, energyData.Date, status)
 	if err != nil {
 		log.Printf("Failed to store report status: %v", err)
 	}
 	if status == "invalid" {
-		log.Printf("Energy data for Zigbee ID %s is not compliant", energyData.ZigbeeID)
+		log.Printf("Energy data for Zigbee ID %s is not compliant", energyData.ID)
 		sendJSONResponse(w, Response{Error: "data set is not compliant"}, http.StatusBadRequest)
 		return
 	}

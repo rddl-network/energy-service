@@ -46,7 +46,7 @@ func TestRegister_MissingFields(t *testing.T) {
 	dbMock := &database.MockDatabase{}
 	_, mux := setupRegisterTestServer(t, plmntMock, dbMock)
 	form := map[string]interface{}{
-		"zigbee_id":          "",
+		"id":                 "",
 		"liquid_address":     "",
 		"device_name":        "",
 		"planetmint_address": "",
@@ -61,12 +61,12 @@ func TestRegister_MissingFields(t *testing.T) {
 	assert.Contains(t, rr.Body.String(), "All fields are required")
 }
 
-func TestRegister_InvalidZigbeeIDFormat(t *testing.T) {
+func TestRegister_InvalidIDFormat(t *testing.T) {
 	plmntMock := &planetmint.MockPlanetmintClient{}
 	dbMock := &database.MockDatabase{}
 	_, mux := setupRegisterTestServer(t, plmntMock, dbMock)
 	form := map[string]interface{}{
-		"zigbee_id":          "badid",
+		"id":                 "badid",
 		"liquid_address":     "liq1",
 		"device_name":        "dev1",
 		"planetmint_address": "plmnt1",
@@ -78,22 +78,22 @@ func TestRegister_InvalidZigbeeIDFormat(t *testing.T) {
 	rr := httptest.NewRecorder()
 	mux.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	assert.Contains(t, rr.Body.String(), "Invalid Zigbee ID format")
+	assert.Contains(t, rr.Body.String(), "Invalid ID format")
 }
 
 func TestRegister_DBError(t *testing.T) {
 	plmntMock := &planetmint.MockPlanetmintClient{}
 	dbMock := &database.MockDatabase{}
-	validZigbeeID := "1234567890123456"
+	validID := "bb0773daa6dc31d6accf9c1b1086a174a33417ac924f51813cf702e344d9ffa6"
 	form := map[string]interface{}{
-		"zigbee_id":          validZigbeeID,
+		"id":                 validID,
 		"liquid_address":     "liq1",
 		"device_name":        "dev1",
 		"planetmint_address": "plmnt1",
 		"device_type":        "type1",
 	}
 	// Simulate DB error on GetDevice
-	dbMock.On("GetDevice", validZigbeeID).Return(database.Device{}, false, errors.New("db error"))
+	dbMock.On("GetDevice", validID).Return(database.Device{}, false, errors.New("db error"))
 	_, mux := setupRegisterTestServer(t, plmntMock, dbMock)
 	body, _ := json.Marshal(form)
 	req := httptest.NewRequest("POST", "/register", bytes.NewBuffer(body))
@@ -107,16 +107,16 @@ func TestRegister_DBError(t *testing.T) {
 func TestRegister_AlreadyExists(t *testing.T) {
 	plmntMock := &planetmint.MockPlanetmintClient{}
 	dbMock := &database.MockDatabase{}
-	validZigbeeID := "1234567890123456"
+	validID := "bb0773daa6dc31d6accf9c1b1086a174a33417ac924f51813cf702e344d9ffa6"
 	form := map[string]interface{}{
-		"zigbee_id":          validZigbeeID,
+		"id":                 validID,
 		"liquid_address":     "liq1",
 		"device_name":        "dev1",
 		"planetmint_address": "plmnt1",
 		"device_type":        "type1",
 	}
-	dbMock.On("GetDevice", validZigbeeID).Return(database.Device{}, true, nil)
-	plmntMock.On("IsZigbeeRegistered", validZigbeeID).Return(false, nil)
+	dbMock.On("GetDevice", validID).Return(database.Device{}, true, nil)
+	plmntMock.On("IsZigbeeRegistered", validID).Return(false, nil)
 	_, mux := setupRegisterTestServer(t, plmntMock, dbMock)
 	body, _ := json.Marshal(form)
 	req := httptest.NewRequest("POST", "/register", bytes.NewBuffer(body))
@@ -130,12 +130,12 @@ func TestRegister_AlreadyExists(t *testing.T) {
 func TestRegister_PlanetmintError(t *testing.T) {
 	plmntMock := &planetmint.MockPlanetmintClient{}
 	dbMock := &database.MockDatabase{}
-	validZigbeeID := "1234567890123456"
-	dbMock.On("GetDevice", validZigbeeID).Return(database.Device{}, false, nil)
-	plmntMock.On("IsZigbeeRegistered", validZigbeeID).Return(false, assert.AnError)
+	validID := "bb0773daa6dc31d6accf9c1b1086a174a33417ac924f51813cf702e344d9ffa6"
+	dbMock.On("GetDevice", validID).Return(database.Device{}, false, nil)
+	plmntMock.On("IsZigbeeRegistered", validID).Return(false, assert.AnError)
 	_, mux := setupRegisterTestServer(t, plmntMock, dbMock)
 	form := map[string]interface{}{
-		"zigbee_id":          validZigbeeID,
+		"id":                 validID,
 		"liquid_address":     "liq1",
 		"device_name":        "dev1",
 		"planetmint_address": "plmnt1",
@@ -153,14 +153,14 @@ func TestRegister_PlanetmintError(t *testing.T) {
 func TestRegister_Success(t *testing.T) {
 	plmntMock := &planetmint.MockPlanetmintClient{}
 	dbMock := &database.MockDatabase{}
-	validZigbeeID := "1234567890123456"
-	dbMock.On("GetDevice", validZigbeeID).Return(database.Device{}, false, nil)
-	dbMock.On("AddDevice", validZigbeeID, "liq1", "dev1", "type1", "plmnt1").Return(nil)
-	plmntMock.On("IsZigbeeRegistered", validZigbeeID).Return(false, nil)
+	validID := "bb0773daa6dc31d6accf9c1b1086a174a33417ac924f51813cf702e344d9ffa6"
+	dbMock.On("GetDevice", validID).Return(database.Device{}, false, nil)
+	dbMock.On("AddDevice", validID, "liq1", "dev1", "type1", "plmnt1").Return(nil)
+	plmntMock.On("IsZigbeeRegistered", validID).Return(false, nil)
 	plmntMock.On("RegisterDER", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	_, mux := setupRegisterTestServer(t, plmntMock, dbMock)
 	form := map[string]interface{}{
-		"zigbee_id":          validZigbeeID,
+		"id":                 validID,
 		"liquid_address":     "liq1",
 		"device_name":        "dev1",
 		"planetmint_address": "plmnt1",

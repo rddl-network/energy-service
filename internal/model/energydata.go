@@ -34,7 +34,7 @@ func (t *TimeStamp) UnmarshalJSON(b []byte) error {
 
 type EnergyData struct {
 	Version      int             `json:"version"`
-	ZigbeeID     string          `json:"zigbee_id"`
+	ID           string          `json:"id"`
 	Date         string          `json:"date"`
 	TimezoneName string          `json:"timezone_name"`
 	Data         [96]EnergyTuple `json:"data"`

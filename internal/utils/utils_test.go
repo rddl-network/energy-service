@@ -2,24 +2,24 @@ package utils
 
 import "testing"
 
-func TestIsValidZigbeeID(t *testing.T) {
+func TestIsValidID(t *testing.T) {
 	utils := &Utils{}
 
 	tests := []struct {
 		id       string
 		expected bool
 	}{
-		{"00124B0001A2B3C4", true},   // Valid Zigbee ID
-		{"00124B0001A2B3C", false},   // Too short
-		{"00124B0001A2B3C4D", false}, // Too long
-		{"00124B0001A2B3CZ", false},  // Contains invalid character
-		{"", false},                  // Empty string
+		{"bb0773daa6dc31d6accf9c1b1086a174a33417ac924f51813cf702e344d9ffa6", true},       // Valid Zigbee ID
+		{"00124Bbb0773daa6dc3117ac924f51813cf702e344d9ffa60001A2B3C", false},             // Too short
+		{"bb0773daa6dc31d6accf9c1b1086a174a33417ac924f51813cf702e344d9ffa6sdfsf", false}, // Too long
+		{"bb0773daa6dc31d6accf9c1b1086a174a33417ac924f51813cf702eZ44d9ffa6", false},      // Contains invalid character
+		{"", false}, // Empty string
 	}
 
 	for _, test := range tests {
-		result := utils.IsValidZigbeeID(test.id)
+		result := utils.IsValidID(test.id)
 		if result != test.expected {
-			t.Errorf("IsValidZigbeeID(%q) = %v; want %v", test.id, result, test.expected)
+			t.Errorf("IsValidID(%q) = %v; want %v", test.id, result, test.expected)
 		}
 	}
 }

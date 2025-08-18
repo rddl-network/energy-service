@@ -43,7 +43,7 @@ func (s *Server) write2InfluxDB(data model.EnergyData) error {
 			context.Background(),
 			"energy_data",
 			map[string]string{
-				"Inspelning": data.ZigbeeID,
+				"Inspelning": data.ID,
 				"timezone":   data.TimezoneName,
 			},
 			map[string]interface{}{"kW/h": data.Data[i].Value},

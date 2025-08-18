@@ -15,7 +15,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	// For JSON data
 	var formData struct {
-		ZigbeeID          string `json:"zigbee_id"`
+		ID                string `json:"id"`
 		LiquidAddress     string `json:"liquid_address"`
 		DeviceName        string `json:"device_name"`
 		PlanetmintAddress string `json:"planetmint_address"`
@@ -29,7 +29,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	zigbeeID := formData.ZigbeeID
+	id := formData.ID
 	liquidAddress := formData.LiquidAddress
 	plmntAddress := formData.PlanetmintAddress
 	deviceName := formData.DeviceName
@@ -38,24 +38,24 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	metadataJson := "{ \"Device\": \"}" + deviceName + "\"}"
 
 	// Validate form data
-	if zigbeeID == "" || liquidAddress == "" || deviceName == "" || deviceType == "" || plmntAddress == "" {
+	if id == "" || liquidAddress == "" || deviceName == "" || deviceType == "" || plmntAddress == "" {
 		sendJSONResponse(w, Response{Error: "All fields are required"}, http.StatusBadRequest)
 		return
 	}
 
 	// Validate Zigbee ID format
-	if !s.utils.IsValidZigbeeID(zigbeeID) {
-		sendJSONResponse(w, Response{Error: "Invalid Zigbee ID format"}, http.StatusBadRequest)
+	if !s.utils.IsValidID(id) {
+		sendJSONResponse(w, Response{Error: "Invalid ID format"}, http.StatusBadRequest)
 		return
 	}
 
 	// Check if Zigbee ID already exists
-	_, existsDB, err := s.db.GetDevice(zigbeeID)
+	_, existsDB, err := s.db.GetDevice(id)
 	if err != nil {
 		sendJSONResponse(w, Response{Error: "Database error " + err.Error()}, http.StatusInternalServerError)
 		return
 	}
-	existsPlmnt, err := s.plmntClient.IsZigbeeRegistered(zigbeeID)
+	existsPlmnt, err := s.plmntClient.IsZigbeeRegistered(id)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 
@@ -66,17 +66,17 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if existsDB || existsPlmnt {
-		sendJSONResponse(w, Response{Error: fmt.Sprintf("Zigbee ID %s already exists", zigbeeID)}, http.StatusBadRequest)
+		sendJSONResponse(w, Response{Error: fmt.Sprintf("ID %s already exists", id)}, http.StatusBadRequest)
 		return
 	}
 
 	// Add device to database
-	err = s.db.AddDevice(zigbeeID, liquidAddress, deviceName, deviceType, plmntAddress)
+	err = s.db.AddDevice(id, liquidAddress, deviceName, deviceType, plmntAddress)
 	if err != nil {
 		sendJSONResponse(w, Response{Error: "Failed to add device"}, http.StatusInternalServerError)
 		return
 	}
-	err = s.plmntClient.RegisterDER(zigbeeID, plmntAddress, liquidAddress, metadataJson)
+	err = s.plmntClient.RegisterDER(id, plmntAddress, liquidAddress, metadataJson)
 	if err != nil {
 		sendJSONResponse(w, Response{Error: "Failed to attest device to Planetmint"}, http.StatusInternalServerError)
 		return

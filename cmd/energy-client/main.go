@@ -25,7 +25,7 @@ func main() {
 	protocol := flag.String("protocol", "http", "Protocol to use (http or https)")
 	host := flag.String("host", "localhost", "Hostname or IP address of the server")
 	port := flag.String("port", "8080", "Port of the server")
-	zigbeeID := flag.String("zigbee_id", "", "Zigbee ID to include in the JSON payload")
+	id := flag.String("id", "", "ID to include in the JSON payload")
 	production := flag.Bool("production", false, "Use for production purposes")
 	date := flag.String("date", currentDate, "Date in YYYY-MM-DD format")
 	tzName := flag.String("timezone", "", "Timezone name (e.g., Europe/Vienna). If empty, uses system timezone or UTC.")
@@ -34,8 +34,8 @@ func main() {
 	flag.Parse()
 
 	// Validate required flags
-	if *zigbeeID == "" {
-		fmt.Println("Error: zigbee_id is required")
+	if *id == "" {
+		fmt.Println("Error: ID is required")
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -107,7 +107,7 @@ func main() {
 	// Create the JSON payload
 	payload := map[string]interface{}{
 		"version":       1,
-		"zigbee_id":     *zigbeeID,
+		"id":            *id,
 		"date":          *date,
 		"timezone_name": tz,
 		"data":          dataArray,

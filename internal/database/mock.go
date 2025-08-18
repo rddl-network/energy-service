@@ -18,8 +18,8 @@ func (m *MockDatabase) AddDevice(zigbeeID, liquidAddress, deviceName, deviceType
 	return args.Error(0)
 }
 
-func (m *MockDatabase) ExistsZigbeeID(zigbeeID string) (bool, error) {
-	args := m.Called(zigbeeID)
+func (m *MockDatabase) ExistsID(id string) (bool, error) {
+	args := m.Called(id)
 	return args.Bool(0), args.Error(1)
 }
 

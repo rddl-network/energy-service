@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/rddl-network/energy-service/internal/config"
 	"github.com/rddl-network/energy-service/internal/database"
@@ -67,4 +68,47 @@ func TestGetDevices_NoPasswordSetInService(t *testing.T) {
 	rr := httptest.NewRecorder()
 	mux.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+}
+
+func TestHandleIsDeviceRegistered_PathParsing(t *testing.T) {
+	mockInflux := &influxdb.MockClient{}
+	mockPlmntclient := &planetmint.MockPlanetmintClient{}
+	mockDB := &database.MockDatabase{}
+	// Device exists
+	mockDB.On("GetDevice", "dev123").Return(database.Device{LiquidAddress: "Liquid_address", DeviceName: "dev123", DeviceType: "washing machine", PlanetmintAddress: "plmnt...", Timestamp: time.Now()}, true, nil)
+	srv, err := server.NewServer(mockPlmntclient, mockInflux, mockDB)
+	assert.NoError(t, err)
+	mux := http.NewServeMux()
+	srv.Routes(mux)
+	mux.HandleFunc("/api/device/", srv.HandleIsDeviceRegistered)
+	//t.Cleanup(func() { srv.Close() })
+
+	// Valid path: /api/device/dev123
+	req := httptest.NewRequest("GET", "/api/device/dev123", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Body.String(), "dev123")
+
+	// Invalid path: /api/device (missing ID)
+	req2 := httptest.NewRequest("GET", "/api/device", nil)
+	rr2 := httptest.NewRecorder()
+	mux.ServeHTTP(rr2, req2)
+	assert.Equal(t, http.StatusBadRequest, rr2.Code)
+	assert.Contains(t, rr2.Body.String(), "Missing device ID")
+
+	// Too many segments: /api/device/dev123/extra
+	req3 := httptest.NewRequest("GET", "/api/device/dev123/extra", nil)
+	rr3 := httptest.NewRecorder()
+	mux.ServeHTTP(rr3, req3)
+	assert.Equal(t, http.StatusBadRequest, rr3.Code)
+	assert.Contains(t, rr3.Body.String(), "Invalid device ID")
+
+	// Device not found
+	mockDB.On("GetDevice", "notfound").Return(database.Device{}, false, nil)
+	req4 := httptest.NewRequest("GET", "/api/device/notfound", nil)
+	rr4 := httptest.NewRecorder()
+	mux.ServeHTTP(rr4, req4)
+	assert.Equal(t, http.StatusNotFound, rr4.Code)
+	assert.Contains(t, rr4.Body.String(), "not found")
 }
