@@ -64,7 +64,7 @@ func TestHandleEnergyData_UnregisteredZigbeeID(t *testing.T) {
 	}
 	energy := model.EnergyData{
 		Version:      1,
-		ZigbeeID:     "unregistered123",
+		ID:           "unregistered123",
 		Date:         "2025-06-04",
 		TimezoneName: "Vienna/Europe",
 		Data:         data,
@@ -89,7 +89,7 @@ func TestHandleEnergyData_Valid(t *testing.T) {
 	dbMock.On("GetReportStatus", "registered123", "2025-06-04").Return("", nil)
 	influxMock.On("GetLastPoint", mock.Anything, mock.Anything, mock.Anything).Return(&influxdb.LastPointResult{
 		Fields:    map[string]interface{}{"kW/h": 0.0},
-		Tags:      map[string]string{"zigbee_id": "registered123"},
+		Tags:      map[string]string{"id": "registered123"},
 		Timestamp: time.Now().UTC(),
 	}, nil)
 
@@ -106,7 +106,7 @@ func TestHandleEnergyData_Valid(t *testing.T) {
 
 	energy := model.EnergyData{
 		Version:      1,
-		ZigbeeID:     "registered123",
+		ID:           "registered123",
 		Date:         "2025-06-04",
 		TimezoneName: "Vienna/Europe",
 		Data:         increasingData,
@@ -184,8 +184,8 @@ func TestDownloadEnergyData_CrowdedFile(t *testing.T) {
 		}
 	}
 	entries := []model.EnergyData{
-		{Version: 1, ZigbeeID: "id1", Date: "2025-06-04", TimezoneName: "Vienna/Europe", Data: data1},
-		{Version: 1, ZigbeeID: "id2", Date: "2025-06-05", TimezoneName: "Vienna/Europe", Data: data2},
+		{Version: 1, ID: "id1", Date: "2025-06-04", TimezoneName: "Vienna/Europe", Data: data1},
+		{Version: 1, ID: "id2", Date: "2025-06-05", TimezoneName: "Vienna/Europe", Data: data2},
 	}
 	enc := json.NewEncoder(tempFile)
 	for _, e := range entries {
@@ -209,8 +209,8 @@ func TestDownloadEnergyData_CrowdedFile(t *testing.T) {
 	var arr []map[string]interface{}
 	assert.NoError(t, json.Unmarshal(rr.Body.Bytes(), &arr))
 	assert.Len(t, arr, 2)
-	assert.Equal(t, "id1", arr[0]["zigbee_id"])
-	assert.Equal(t, "id2", arr[1]["zigbee_id"])
+	assert.Equal(t, "id1", arr[0]["id"])
+	assert.Equal(t, "id2", arr[1]["id"])
 }
 
 func TestDownloadEnergyData_CorruptedFile(t *testing.T) {
@@ -247,7 +247,7 @@ func TestHandleEnergyData_IncrementalVsLastPoint(t *testing.T) {
 	influxMock.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	influxMock.On("GetLastPoint", mock.Anything, mock.Anything, mock.Anything).Return(&influxdb.LastPointResult{
 		Fields:    map[string]interface{}{"kW/h": 10.0},
-		Tags:      map[string]string{"zigbee_id": "zigbeeInc"},
+		Tags:      map[string]string{"id": "zigbeeInc"},
 		Timestamp: time.Now().UTC(),
 	}, nil)
 
@@ -261,7 +261,7 @@ func TestHandleEnergyData_IncrementalVsLastPoint(t *testing.T) {
 	}
 	energy := model.EnergyData{
 		Version:      1,
-		ZigbeeID:     "zigbeeInc",
+		ID:           "zigbeeInc",
 		Date:         "2025-06-04",
 		TimezoneName: "Vienna/Europe",
 		Data:         data,
@@ -285,7 +285,7 @@ func TestHandleEnergyData_EqualVsLastPoint(t *testing.T) {
 	influxMock.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	influxMock.On("GetLastPoint", mock.Anything, mock.Anything, mock.Anything).Return(&influxdb.LastPointResult{
 		Fields:    map[string]interface{}{"kW/h": 10.0},
-		Tags:      map[string]string{"zigbee_id": "zigbeeEq"},
+		Tags:      map[string]string{"id": "zigbeeEq"},
 		Timestamp: time.Now().UTC(),
 	}, nil)
 
@@ -299,7 +299,7 @@ func TestHandleEnergyData_EqualVsLastPoint(t *testing.T) {
 	}
 	energy := model.EnergyData{
 		Version:      1,
-		ZigbeeID:     "zigbeeEq",
+		ID:           "zigbeeEq",
 		Date:         "2025-06-04",
 		TimezoneName: "Vienna/Europe",
 		Data:         data,
@@ -334,7 +334,7 @@ func TestHandleEnergyData_EqualVsLastPoint_no_previous_data(t *testing.T) {
 	}
 	energy := model.EnergyData{
 		Version:      1,
-		ZigbeeID:     "zigbeeEq",
+		ID:           "zigbeeEq",
 		Date:         "2025-06-04",
 		TimezoneName: "Vienna/Europe",
 		Data:         data,
@@ -359,7 +359,7 @@ func TestHandleEnergyData_LowerVsLastPoint(t *testing.T) {
 	influxMock.On("WritePoint", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	influxMock.On("GetLastPoint", mock.Anything, mock.Anything, mock.Anything).Return(&influxdb.LastPointResult{
 		Fields:    map[string]interface{}{"kW/h": 10.0},
-		Tags:      map[string]string{"zigbee_id": "zigbeeLow"},
+		Tags:      map[string]string{"id": "zigbeeLow"},
 		Timestamp: time.Now().UTC(),
 	}, nil)
 
@@ -373,7 +373,7 @@ func TestHandleEnergyData_LowerVsLastPoint(t *testing.T) {
 	}
 	energy := model.EnergyData{
 		Version:      1,
-		ZigbeeID:     "zigbeeLow",
+		ID:           "zigbeeLow",
 		Date:         "2025-06-04",
 		TimezoneName: "Vienna/Europe",
 		Data:         data,

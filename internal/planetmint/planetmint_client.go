@@ -16,8 +16,8 @@ import (
 )
 
 type IPlanetmintClient interface {
-	RegisterDER(zigbee_id string, plmntAddress string, lidquidAddress string, metadatajson string) error
-	IsZigbeeRegistered(zigbee_id string) (bool, error)
+	RegisterDER(id string, plmntAddress string, lidquidAddress string, metadatajson string) error
+	IsZigbeeRegistered(id string) (bool, error)
 }
 
 type PlanetmintClient struct {
@@ -48,9 +48,9 @@ func SetupGRPCConnection(cfg *config.Config) (conn *grpc.ClientConn, err error) 
 	)
 }
 
-func (pmc *PlanetmintClient) RegisterDER(zigbee_id string, plmntAddress string, lidquidAddress string, metadatajson string) error {
+func (pmc *PlanetmintClient) RegisterDER(id string, plmntAddress string, lidquidAddress string, metadatajson string) error {
 	der := dertypes.DER{
-		ZigbeeID:      zigbee_id,
+		ZigbeeID:      id,
 		PlmntAddress:  plmntAddress,
 		LiquidAddress: lidquidAddress,
 		MetadataJson:  metadatajson,
@@ -66,25 +66,25 @@ func (pmc *PlanetmintClient) RegisterDER(zigbee_id string, plmntAddress string, 
 	if _, err := lib.BroadcastTxWithFileLock(addr, msg); err != nil {
 		return err
 	}
-	log.Printf("[DEBUG] RegisterDER: Successfully registered DER for ZigbeeID %s", zigbee_id)
+	log.Printf("[DEBUG] RegisterDER: Successfully registered DER for ID %s", id)
 	return nil
 }
 
-func (pmc *PlanetmintClient) IsZigbeeRegistered(zigbeeID string) (registered bool, err error) {
+func (pmc *PlanetmintClient) IsZigbeeRegistered(id string) (registered bool, err error) {
 	derClient := dertypes.NewQueryClient(pmc.conn)
-	res, err := derClient.Der(context.Background(), &dertypes.QueryDerRequest{ZigbeeID: zigbeeID})
+	res, err := derClient.Der(context.Background(), &dertypes.QueryDerRequest{ZigbeeID: id})
 	if err != nil {
 		return
 	}
 	if res != nil && res.Der != nil {
-		registered = res.Der.ZigbeeID == zigbeeID
+		registered = res.Der.ZigbeeID == id
 		if registered {
-			log.Printf("[DEBUG] IsZigbeeRegistered: ZigbeeID %s is registered", zigbeeID)
+			log.Printf("[DEBUG] IsZigbeeRegistered: ID %s is registered", id)
 		} else {
-			log.Printf("[DEBUG] IsZigbeeRegistered: ZigbeeID %s is not registered", zigbeeID)
+			log.Printf("[DEBUG] IsZigbeeRegistered: ID %s is not registered", id)
 		}
 	} else {
-		log.Printf("[DEBUG] IsZigbeeRegistered: No DER found for ZigbeeID %s", zigbeeID)
+		log.Printf("[DEBUG] IsZigbeeRegistered: No DER found for ID %s", id)
 	}
 	return
 }

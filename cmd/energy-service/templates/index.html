@@ -15,21 +15,21 @@
 
         <!-- Right side: Form -->
         <div class="w-2/3 bg-white shadow-md rounded-lg p-6 ml-6">
-            <h1 class="text-2xl font-bold mb-6">Zigbee ID Registration</h1>
+            <h1 class="text-2xl font-bold mb-6">ID Registration</h1>
             <form id="registration-form" class="space-y-4">
                 <div>
-                    <label class="block text-gray-700 font-medium mb-2" for="zigbee_id">
-                        Zigbee ID*
+                    <label class="block text-gray-700 font-medium mb-2" for="id">
+                        ID*
                     </label>
                     <input
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        id="zigbee_id"
-                        name="zigbee_id"
+                        id="id"
+                        name="id"
                         type="text"
-                        placeholder="Enter Zigbee ID"
+                        placeholder="Enter ID"
                         required
                     >
-                    <p class="text-sm text-gray-500 mt-1">Enter a valid Zigbee ID.</p>
+                    <p class="text-sm text-gray-500 mt-1">Enter a valid ID.</p>
                 </div>
                 <div>
                     <label class="block text-gray-700 font-medium mb-2" for="liquid_address">
@@ -132,14 +132,14 @@
                 const formData = new FormData(form);
                 
                 // Get form values
-                const zigbeeId = document.getElementById('zigbee_id').value;
+                const Id = document.getElementById('id').value;
                 const liquidAddress = document.getElementById('liquid_address').value;
                 const deviceName = document.getElementById('device_name').value;
                 const planetmintAddress = document.getElementById('planetmint_address').value;
                 const deviceType = document.getElementById('device_type').value;
                 // Create JSON payload
                 const data = {
-                    zigbee_id: zigbeeId,
+                    id: Id,
                     liquid_address: liquidAddress,
                     device_name: deviceName,
                     planetmint_address: planetmintAddress,

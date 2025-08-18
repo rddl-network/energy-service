@@ -175,21 +175,21 @@ func (db *Database) GetByLiquidAddress(liquidAddress string) (map[string]Device,
 	return result, nil
 }
 
-// ExistsZigbeeID returns true if the Zigbee ID exists in the database
-func (db *Database) ExistsZigbeeID(zigbeeID string) (bool, error) {
-	_, exists, err := db.GetDevice(zigbeeID)
+// ExistsID returns true if the Zigbee ID exists in the database
+func (db *Database) ExistsID(id string) (bool, error) {
+	_, exists, err := db.GetDevice(id)
 	return exists, err
 }
 
-// SetReportStatus stores the validation status ("valid" or "invalid") for a given ZigbeeID and date
-func (db *Database) SetReportStatus(zigbeeID, date, status string) error {
-	key := []byte("report:device:" + zigbeeID + ",date:" + date)
+// SetReportStatus stores the validation status ("valid" or "invalid") for a given ID and date
+func (db *Database) SetReportStatus(id, date, status string) error {
+	key := []byte("report:device:" + id + ",date:" + date)
 	return db.db.Put(key, []byte(status), nil)
 }
 
-// GetReportStatus retrieves the validation status for a given ZigbeeID and date
-func (db *Database) GetReportStatus(zigbeeID, date string) (string, error) {
-	key := []byte("report:device:" + zigbeeID + ",date:" + date)
+// GetReportStatus retrieves the validation status for a given ID and date
+func (db *Database) GetReportStatus(id, date string) (string, error) {
+	key := []byte("report:device:" + id + ",date:" + date)
 	val, err := db.db.Get(key, nil)
 	if err == leveldb.ErrNotFound {
 		return "", nil
@@ -206,11 +206,11 @@ func (db *Database) GetReportStatus(zigbeeID, date string) (string, error) {
 //
 //go:generate mockery --name=DeviceStore
 type DeviceStore interface {
-	GetDevice(zigbeeID string) (Device, bool, error)
-	AddDevice(zigbeeID, liquidAddress, deviceName, deviceType, planetmintAddress string) error
-	ExistsZigbeeID(zigbeeID string) (bool, error)
+	GetDevice(id string) (Device, bool, error)
+	AddDevice(id, liquidAddress, deviceName, deviceType, planetmintAddress string) error
+	ExistsID(id string) (bool, error)
 	GetAllDevices() (map[string]Device, error)
 	GetByLiquidAddress(liquidAddress string) (map[string]Device, error)
-	SetReportStatus(zigbeeID, date, status string) error
-	GetReportStatus(zigbeeID, date string) (string, error)
+	SetReportStatus(id, date, status string) error
+	GetReportStatus(id, date string) (string, error)
 }

@@ -11,14 +11,14 @@ The `energy-client` accepts the following parameters:
 - `--protocol` (default: `http`): Protocol to use (http or https).
 - `--host` (default: `localhost`): Hostname or IP address of the server.
 - `--port` (default: `8080`): Port of the server.
-- `--zigbee_id` (required): Zigbee ID to include in the JSON payload.
+- `--id` (required): Zigbee ID to include in the JSON payload.
 - `--production` (default: `false`): Use for production purposes. Ensures exactly 96 data values are provided.
 - `--date` (default: current date in `YYYY-MM-DD` format): Date to include in the JSON payload.
 - `--data` (default: `[]`): 96 float values to be sent in the JSON payload. If not provided, random data will be generated in non-production mode.
 
 ### Example Usage
 ```bash
-./energy-client --protocol http --host localhost --port 8080 --zigbee_id 12345 --date 2025-05-15 --data "1.0 2.0 3.0 ..."
+./energy-client --protocol http --host localhost --port 8080 --id 12345 --date 2025-05-15 --data "1.0 2.0 3.0 ..."
 ```
 
 ### Development
@@ -45,12 +45,12 @@ The `energy-service` is a server application that handles device registration an
 - `GET /api/devices`: Retrieve all registered devices as a JSON array.
 - `POST /api/energy`: Upload energy data (JSON payload, see client for format).
 - `GET /api/energy/download?pwd=YOUR_PASSWORD`: Download all stored energy data as a JSON array. **Password-protected.**
-- `GET /api/device/{zigbee_id}`: Check if a device is registered.
+- `GET /api/device/{id}`: Check if a device is registered.
 
 #### /register
 - **Method:** POST
 - **Request Body:** JSON object with device registration details. Example fields:
-  - `zigbee_id` (string, required): Unique Zigbee ID for the device
+  - `id` (string, required): Unique Zigbee ID for the device
   - `device_name` (string, required): Human-readable name
   - `device_type` (string, required): Type/category of the device
   - `liquid_address` (string, required): Liquid address for the device
@@ -64,7 +64,7 @@ The `energy-service` is a server application that handles device registration an
 curl -X POST http://localhost:8080/register \
   -H "Content-Type: application/json" \
   -d '{
-    "zigbee_id": "12345",
+    "id": "12345",
     "device_name": "Living Room Plug",
     "device_type": "Plug",
     "liquid_address": "liq1...",
@@ -75,7 +75,7 @@ curl -X POST http://localhost:8080/register \
 #### /api/devices
 - **Method:** GET
 - **Response:**
-  - On success: Returns a JSON array of all registered devices, each with their properties (e.g., `zigbee_id`, `device_name`, `device_type`, etc.).
+  - On success: Returns a JSON array of all registered devices, each with their properties (e.g., `id`, `device_name`, `device_type`, etc.).
   - If no devices are registered: Returns `[]` (empty array).
 
 **Example:**
@@ -87,7 +87,7 @@ curl http://localhost:8080/api/devices
 - **Method:** POST
 - **Request Body:** JSON object with the following fields:
   - `version` (int, required): Version of the payload format
-  - `zigbee_id` (string, required): Unique Zigbee ID for the device
+  - `id` (string, required): Unique Zigbee ID for the device
   - `date` (string, required): Date for the energy data (YYYY-MM-DD)
   - `timezone_name` (string, required): Name of the timezone (e.g., "Europe/Vienna")
   - `data` (array of 96 objects, required): Each object is:
@@ -101,7 +101,7 @@ curl http://localhost:8080/api/devices
 ```json
 {
   "version": 1,
-  "zigbee_id": "12345",
+  "id": "12345",
   "date": "2025-06-04",
   "timezone_name": "Europe/Vienna",
   "data": [
@@ -130,9 +130,9 @@ curl "http://localhost:8080/api/energy/download?pwd=YOUR_PASSWORD"
 
 **Note:** The download endpoint streams all valid JSON entries from the server's data file. Each entry matches the format uploaded via `/api/energy`.
 
-#### /api/device/{zigbee_id}
+#### /api/device/{id}
 - **Method:** GET
-- **Path Parameter:** `zigbee_id` (required) — The Zigbee ID of the device to check.
+- **Path Parameter:** `id` (required) — The ID of the device to check.
 - **Response:**
   - If the device is registered: `{ "registered": true }`
   - If the device is not found: `{ "error": "Device not found" }` (HTTP 404)
