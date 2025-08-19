@@ -31,7 +31,13 @@ devices.db
 main
 static/rddl-sidepane.png
 templates/index.html
+test_exec/*
 
 #local data
 energy_data.json
 app.toml
+energy-client
+energy-service
+energy-db
+export.json
+data/dirigera_tokens.db

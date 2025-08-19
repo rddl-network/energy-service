@@ -36,7 +36,7 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if !existsPlmnt {
-		log.Printf("Zigbee ID %s not registered in Planetmint", energyData.ID)
+		log.Printf("ID %s not registered in Planetmint", energyData.ID)
 		sendJSONResponse(w, Response{Error: "Inspelning not registered in Planetmint"}, http.StatusBadRequest)
 		return
 	}
@@ -48,7 +48,7 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if reportStatus != "" {
-		sendJSONResponse(w, Response{Error: "report for this ZigbeeID and date already exists"}, http.StatusConflict)
+		sendJSONResponse(w, Response{Error: "report for this ID and date already exists"}, http.StatusConflict)
 		return
 	}
 
@@ -74,7 +74,7 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 	status := "valid"
 	if !model.IsEnergyDataIncreasing(energyData.Data) {
 		status = "invalid"
-		log.Printf("Energy data for Zigbee ID %s is not increasing", energyData.ID)
+		log.Printf("Energy data for ID %s is not increasing", energyData.ID)
 	}
 
 	err = s.db.SetReportStatus(energyData.ID, energyData.Date, status)
@@ -82,7 +82,7 @@ func (s *Server) handleEnergyData(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to store report status: %v", err)
 	}
 	if status == "invalid" {
-		log.Printf("Energy data for Zigbee ID %s is not compliant", energyData.ID)
+		log.Printf("Energy data for ID %s is not compliant", energyData.ID)
 		sendJSONResponse(w, Response{Error: "data set is not compliant"}, http.StatusBadRequest)
 		return
 	}
