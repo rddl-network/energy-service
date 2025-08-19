@@ -12,6 +12,16 @@ type Config struct {
 	Server     ServerConfig     `toml:"server"`
 	InfluxDB   InfluxDBConfig   `toml:"influxdb"`
 	Planetmint PlanetmintConfig `toml:"planetmint"`
+	MQTT       MQTTConfig       `toml:"mqtt"`
+}
+
+// MQTTConfig holds MQTT-related configuration
+type MQTTConfig struct {
+	Host     string `toml:"host"`
+	Port     int    `toml:"port"`
+	Username string `toml:"username"`
+	Password string `toml:"password"`
+	Topic    string `toml:"topic"`
 }
 
 type PlanetmintConfig struct {
@@ -54,6 +64,13 @@ func DefaultConfig() *Config {
 			Actor:   "plmnt17keyseuam6qz4t49lg0e75a8y7jvcj03fn635z",
 			ChainID: "testnetwork",
 			RPCHost: "localhost:9090",
+		},
+		MQTT: MQTTConfig{
+			Host:     "localhost",
+			Port:     1883,
+			Username: "",
+			Password: "",
+			Topic:    "energy-consumption-reports",
 		},
 	}
 }
