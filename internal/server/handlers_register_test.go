@@ -174,3 +174,28 @@ func TestRegister_Success(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, rr.Code)
 	assert.Contains(t, rr.Body.String(), "registered successfully")
 }
+
+func TestRegister_Success_and_Query(t *testing.T) {
+	plmntMock := &planetmint.MockPlanetmintClient{}
+	dbMock := &database.MockDatabase{}
+	validID := "bb0773daa6dc31d6accf9c1b1986a174a33417ac924f51813cf702e344d9ffa6"
+	dbMock.On("GetDevice", validID).Return(database.Device{}, false, nil)
+	dbMock.On("AddDevice", validID, "liq1", "dev1", "type1", "plmnt1").Return(nil)
+	plmntMock.On("IsZigbeeRegistered", validID).Return(false, nil)
+	plmntMock.On("RegisterDER", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	_, mux := setupRegisterTestServer(t, plmntMock, dbMock)
+	form := map[string]interface{}{
+		"id":                 validID,
+		"liquid_address":     "liq1",
+		"device_name":        "dev1",
+		"planetmint_address": "plmnt1",
+		"device_type":        "type1",
+	}
+	body, _ := json.Marshal(form)
+	req := httptest.NewRequest("POST", "/register", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusCreated, rr.Code)
+	assert.Contains(t, rr.Body.String(), "registered successfully")
+}
