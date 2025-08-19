@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"sync"
 
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+
 	"github.com/rddl-network/energy-service/internal/database"
 	"github.com/rddl-network/energy-service/internal/influxdb"
 	service "github.com/rddl-network/energy-service/internal/planetmint"
@@ -26,6 +28,7 @@ type Server struct {
 	energyDataFileMutex sync.Mutex
 	influxDBClient      influxdb.Client
 	plmntClient         service.IPlanetmintClient
+	mqttClient          mqtt.Client
 }
 
 // NewServer creates a new server instance, now accepts influxWriteAPI and DeviceStore
@@ -34,12 +37,14 @@ func NewServer(
 	idbClient influxdb.Client,
 	db database.DeviceStore, // <-- new param
 ) (*Server, error) {
-	return &Server{
+	s := &Server{
 		db:             db,
 		utils:          &utils.Utils{},
 		influxDBClient: idbClient,
 		plmntClient:    plmntClient,
-	}, nil
+	}
+	s.initMQTT()
+	return s, nil
 }
 
 // NewDefaultServer creates a new server with a real database (for production)
@@ -51,18 +56,23 @@ func NewDefaultServer(
 	if err != nil {
 		return nil, err
 	}
-	return &Server{
+	s := &Server{
 		db:             db,
 		utils:          &utils.Utils{},
 		influxDBClient: dbClient,
 		plmntClient:    plmntClient,
-	}, nil
+	}
+	s.initMQTT()
+	return s, nil
 }
 
 // Close shuts down the server and closes the database if possible
 func (s *Server) Close() {
 	if closer, ok := s.db.(interface{ Close() }); ok {
 		closer.Close()
+	}
+	if s.mqttClient != nil {
+		s.mqttClient.Disconnect(250)
 	}
 }
 

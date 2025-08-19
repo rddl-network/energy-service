@@ -41,11 +41,62 @@ The `energy-service` is a server application that handles device registration an
 - SQLite database for persistent storage.
 
 ### API Endpoints
-- `POST /register`: Register a new device.
-- `GET /api/devices`: Retrieve all registered devices as a JSON array.
-- `POST /api/energy`: Upload energy data (JSON payload, see client for format).
-- `GET /api/energy/download?pwd=YOUR_PASSWORD`: Download all stored energy data as a JSON array. **Password-protected.**
-- `GET /api/device/{id}`: Check if a device is registered.
+---
+
+## MQTT Integration
+
+### Overview
+The energy-service can also ingest energy data via MQTT. When configured, the service connects to an MQTT broker and subscribes to a topic (default: `energy-consumption-reports`). Incoming messages must be JSON objects matching the same format as the REST `/api/energy` endpoint. Validated data is written to the same InfluxDB instance as HTTP uploads.
+
+### Configuration
+MQTT settings are configured in the TOML config file (see `internal/config/config.go`). Example section:
+
+```toml
+[mqtt]
+host = "localhost"
+port = 1883
+username = ""
+password = ""
+topic = "energy-consumption-reports"
+```
+
+### How It Works
+- On startup, the service connects to the configured MQTT broker and subscribes to the specified topic.
+- Each message received on the topic is expected to be a JSON object matching the `EnergyData` format:
+  - `version` (int)
+  - `id` (string)
+  - `date` (string, YYYY-MM-DD)
+  - `timezone_name` (string)
+  - `data` (array of 96 objects: `{ "value": float, "timestamp": string }`)
+- The same validation and checks are performed as for HTTP uploads:
+  - Device registration is checked
+  - Duplicate reports for the same ID/date are rejected
+  - Data must be monotonically non-decreasing
+  - The first value must not be less than the last value in the database
+- Valid data is written to InfluxDB and stored in the local JSON file
+- Errors and invalid data are logged
+
+### Example MQTT Payload
+```json
+{
+  "version": 1,
+  "id": "bb0773daa6dc31d6accf9c1b1986a174a33417ac924f51813cf702e344d9ffa6",
+  "date": "2025-07-15",
+  "timezone_name": "Europe/Vienna",
+  "data": [
+    {"value": 50.000, "timestamp": "2025-07-15 00:15:00"},
+    {"value": 50.100, "timestamp": "2025-07-15 00:30:00"},
+    ... (total 96 entries) ...
+  ]
+}
+```
+
+### Usage Notes
+- MQTT ingestion is automatic if configured; no additional API calls are needed.
+- The same data format and validation rules apply as for HTTP POST `/api/energy`.
+- Errors are logged to the server log; invalid messages are ignored.
+
+---
 
 #### /register
 - **Method:** POST
