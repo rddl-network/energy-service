@@ -87,7 +87,7 @@ topic = "energy-consumption-reports"
     {"value": 50.000, "timestamp": "2025-07-15 00:15:00"},
     {"value": 50.100, "timestamp": "2025-07-15 00:30:00"},
     ... (total 96 entries) ...
-    {"value": 60.100, "timestamp": "2025-07-16 00:00:00"}, // <-- the lst entry is always 00:00:00 of the next day 
+    {"value": 60.100, "timestamp": "2025-07-16 00:00:00"}, // <-- the last entry is always 00:00:00 of the next day 
   ]
 }
 ```
