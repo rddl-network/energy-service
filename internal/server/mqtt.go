@@ -26,6 +26,12 @@ func (s *Server) initMQTT() {
 	tlsConfig := &tls.Config{}
 	opts.SetTLSConfig(tlsConfig)
 
+	// Add connection lost handler
+	opts.SetConnectionLostHandler(func(client mqtt.Client, err error) {
+		log.Printf("MQTT connection lost: %v", err)
+	})
+	opts.AutoReconnect = true
+
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		log.Printf("MQTT connect error: %v", token.Error())
@@ -53,6 +59,12 @@ func extractIDFromTopic(topic string) string {
 }
 
 func (s *Server) handleSimpleDataMQTTMessage(client mqtt.Client, msg mqtt.Message) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("MQTT handler panic: %v", r)
+		}
+	}()
+
 	var deviceStatusExt model.DeviceStatusExt
 
 	deviceStatusExt.ID = extractIDFromTopic(msg.Topic())
@@ -71,7 +83,6 @@ func (s *Server) handleSimpleDataMQTTMessage(client mqtt.Client, msg mqtt.Messag
 		return
 	}
 
-	//go s.writeJSON2File(energyData)
 	err := s.writeDeviceStatus2InfluxDB(deviceStatusExt)
 	if err != nil {
 		log.Printf("MQTT: Failed to write to database: %v", err)
