@@ -57,6 +57,31 @@ func (s *Server) write2InfluxDB(data model.EnergyData) error {
 	return nil
 }
 
+func (s *Server) writeDeviceStatus2InfluxDB(data model.DeviceStatusExt) error {
+	writeAPI := s.influxDBClient
+	if writeAPI == nil {
+		log.Printf("No InfluxDB write API set")
+		return nil
+	}
+
+	err := writeAPI.WritePoint(
+		context.Background(),
+		"device_status",
+		map[string]string{
+			"ID": data.ID,
+		},
+		map[string]interface{}{
+			"kW/h": *data.DeviceStatus.TotalEnergyConsumed,
+		},
+		time.Now(),
+	)
+	if err != nil {
+		log.Printf("Failed to write to InfluxDB: %v", err)
+		return err
+	}
+	return nil
+}
+
 // sendJSONResponse sends a JSON response with the given status code
 func sendJSONResponse(w http.ResponseWriter, resp Response, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")

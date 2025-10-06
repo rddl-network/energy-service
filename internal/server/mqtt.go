@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/rddl-network/energy-service/internal/config"
@@ -25,21 +26,69 @@ func (s *Server) initMQTT() {
 	tlsConfig := &tls.Config{}
 	opts.SetTLSConfig(tlsConfig)
 
+	// Add connection lost handler
+	opts.SetConnectionLostHandler(func(client mqtt.Client, err error) {
+		log.Printf("MQTT connection lost: %v", err)
+	})
+	opts.AutoReconnect = true
+
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		log.Printf("MQTT connect error: %v", token.Error())
 		return
 	}
 	s.mqttClient = client
-	topic := mqttCfg.Topic
-	if topic == "" {
-		topic = "energy-consumption-reports"
-	}
-	if token := client.Subscribe(topic, 0, s.handleMQTTMessage); token.Wait() && token.Error() != nil {
+	//subscribe(client, mqttCfg.Topic, s.handleMQTTMessage)
+	subscribe(client, "dirigera/+", s.handleSimpleDataMQTTMessage)
+}
+
+func subscribe(client mqtt.Client, topic string, callback mqtt.MessageHandler) {
+	if token := client.Subscribe(topic, 0, callback); token.Wait() && token.Error() != nil {
 		log.Printf("MQTT subscribe error: %v", token.Error())
 	} else {
 		log.Printf("Subscribed to MQTT topic: %s", topic)
 	}
+}
+
+func extractIDFromTopic(topic string) string {
+	parts := strings.Split(topic, "/")
+	if len(parts) == 2 && parts[0] == "dirigera" {
+		return parts[1]
+	}
+	return ""
+}
+
+func (s *Server) handleSimpleDataMQTTMessage(client mqtt.Client, msg mqtt.Message) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("MQTT handler panic: %v", r)
+		}
+	}()
+
+	var deviceStatusExt model.DeviceStatusExt
+
+	deviceStatusExt.ID = extractIDFromTopic(msg.Topic())
+	if deviceStatusExt.ID == "" {
+		log.Printf("MQTT: Invalid topic format: %s", msg.Topic())
+		return
+	}
+
+	if err := json.Unmarshal(msg.Payload(), &deviceStatusExt.DeviceStatus); err != nil {
+		log.Printf("MQTT: Failed to decode JSON: %v", err)
+		return
+	}
+
+	if deviceStatusExt.DeviceStatus.TotalEnergyConsumed == nil {
+		log.Printf("MQTT: JSON does not contain consumed energy values.")
+		return
+	}
+
+	err := s.writeDeviceStatus2InfluxDB(deviceStatusExt)
+	if err != nil {
+		log.Printf("MQTT: Failed to write to database: %v", err)
+		return
+	}
+	log.Printf("MQTT: Energy data received and written to database successfully")
 }
 
 // handleMQTTMessage processes incoming MQTT messages as energy data
